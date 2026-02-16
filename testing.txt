@@ -1,0 +1,15 @@
+Repo URL: git clone https://github.com/typicode/jsonplaceholder.git
+Folder Name: Typicode
+
+https://github.com/facebook/react.git
+
+https://github.com/robin-dc/Facebook-UI-Clone
+
+https://github.com/vercel/next.js
+
+https://github.com/expressjs/express
+
+https://github.com/tiangolo/full-stack-fastapi-postgresql
+
+
+blast_radius url = http://127.0.0.1:8000/architecture/blast-radius?folder_name=Express&file=lib/utils.js
