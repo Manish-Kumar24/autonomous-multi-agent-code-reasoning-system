@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
-import os
+import os, uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel

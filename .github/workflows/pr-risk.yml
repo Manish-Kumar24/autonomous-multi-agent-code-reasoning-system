@@ -1,0 +1,43 @@
+name: PR Risk Analysis
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  risk-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Get Changed Files
+        id: files
+        uses: tj-actions/changed-files@v44
+
+      - name: Call Risk Analysis API
+        id: risk
+        run: |
+          RESPONSE=$(curl -s -X POST "$RISK_API_URL" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "folder_name": "${{ github.event.repository.name }}",
+              "changed_files": ${{ steps.files.outputs.all_changed_files }}
+            }')
+
+          echo "response=$RESPONSE" >> $GITHUB_OUTPUT
+        env:
+          RISK_API_URL: ${{ secrets.RISK_API_URL }}
+
+      - name: Comment PR with Risk Report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = `${{ steps.risk.outputs.response }}`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🤖 AI Risk Analysis Report\n\n\`\`\`json\n${response}\n\`\`\``
+            });
