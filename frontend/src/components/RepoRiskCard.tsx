@@ -46,12 +46,12 @@ export default function RepoRiskCard({ folderName }: Props) {
   }, [folderName]);
 
   if (!folderName) {
-  return (
-    <div className="bg-red-500 text-white p-4 rounded-xl">
-      Enter a folder name to analyze repository risk.
-    </div>
-  );
-}
+    return (
+      <div className="bg-red-500 text-white p-4 rounded-xl">
+        Enter a folder name to analyze repository risk.
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {

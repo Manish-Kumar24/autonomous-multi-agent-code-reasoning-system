@@ -2,17 +2,14 @@ import os
 import json
 from core.llm import ask_llama
 
-
 IMPORTANT_FILES = [
     # Primary documentation
     "README.md",
     ".github/workflows",
-
     # Dependency + runtime
     "package.json",
     "requirements.txt",
     "pyproject.toml",
-
     # 🔥 NEW — Elite signals
     "tsconfig.json",
     "Dockerfile",
@@ -21,20 +18,10 @@ IMPORTANT_FILES = [
     "Makefile"
 ]
 
-
-
 def read_important_files(repo_path: str) -> str:
-    """
-    Reads high-signal files from the repository.
-    Limits token usage while preserving context quality.
-    """
-
     context_parts = []
-
     for file in IMPORTANT_FILES:
-
         path = os.path.join(repo_path, file)
-
         if os.path.exists(path):
             try:
                 with open(path, "r", errors="ignore") as f:
@@ -47,46 +34,33 @@ def read_important_files(repo_path: str) -> str:
                         "makefile"
                     ]:
                         lines = f.readlines()
-
                         if len(lines) > 400:
                             content = "".join(lines[:300] + lines[-100:])
                         else:
                             content = "".join(lines)
-
-
                     else:
                         content = f.read(4000)
-
                     context_parts.append(
                         f"\n==== {file} ====\n{content}"
                     )
             except Exception:
                 pass
-
     return "\n".join(context_parts)
 
-
 def summarize_repo(repo_path: str):
-    """
-    Calls the LLM to analyze a repository and returns structured output.
-    """
-
     context = read_important_files(repo_path)
-
     if not context:
         return {
             "analysis": None,
             "explanation": "No important files found.",
             "error": True
         }
-
     messages = [
         {
             "role": "system",
             "content":
             """
 You are a Principal Software Architect performing a deep technical audit of a code repository.
-
 Your job is NOT to summarize casually.
 Your job is to THINK like a senior engineer reviewing a production system.
 
@@ -175,40 +149,30 @@ No marketing language.
             "content": context
         }
     ]
-
     response = ask_llama(messages)
-
     # 🔥 Parse safely (senior pattern)
     try:
         json_part, explanation = response.split("===EXPLANATION===")
-
         parsed_json = json.loads(json_part.strip())
-
         return {
             "analysis": parsed_json,
             "explanation": explanation.strip(),
             "error": False
         }
-
     except Exception:
-
         # Never crash your agent — return recoverable output
         return {
             "analysis": None,
             "explanation": response,
             "error": True
         }
-
 def file_explainer_agent(code_content):
-
     messages = [
         {
             "role": "system",
             "content": """
 You are a Staff Software Engineer performing a code review.
-
 Explain the file with:
-
 1. Purpose of the file
 2. Core logic
 3. Dependencies
@@ -219,15 +183,12 @@ Explain the file with:
 8. Improvement suggestions
 9. Where this file sits in the overall architecture 
    (entrypoint, router, controller, config, core engine, etc.)
-
 Avoid generic architecture criticism.
 Only mention scalability concerns if there is real evidence:
 - tightly coupled modules
 - no service boundaries
 - large shared state
 - synchronous chains
-
-
 Be precise. No fluff.
 """
         },
@@ -236,6 +197,4 @@ Be precise. No fluff.
             "content": code_content
         }
     ]
-
     return ask_llama(messages, temperature=0.1)
-

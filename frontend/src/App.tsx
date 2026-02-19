@@ -84,8 +84,6 @@ const App = () => {
   }
 };
 
-  
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600 animate-gradient-xy p-6">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -215,16 +213,12 @@ const App = () => {
                 >
                   📄 {file.path}
                 </li>
-
               ))}
             </ul>
           )}
-
         </div>
-
       </div>
     </div>
   );
 };
-
 export default App;
