@@ -21,3 +21,5 @@ Thumbs.db
 node_modules/
 dist/
 build/
+.env
+backend/.env
