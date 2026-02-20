@@ -1,6 +1,8 @@
 # Use official Python image
 FROM python:3.11-slim
 
+ARG CACHE_BUST=1
+
 # Install git (fixes your Railway error)
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
