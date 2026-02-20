@@ -89,7 +89,8 @@ def summarize(folder_name: str):
         return {"error": "Repo not found"}
     return summarize_repo(repo_path)
 
-BASE_REPO_DIR = "/home/manish/projects/autonomous-multi-agent-code-reasoning-system/backend/repos"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_REPO_DIR = os.path.join(BASE_DIR, "repos")
 
 @app.get("/explain-file")
 async def explain_file(path: str = Query(...)):
