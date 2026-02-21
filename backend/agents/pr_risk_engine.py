@@ -9,6 +9,9 @@ load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+repo_path = os.path.join(BASE_DIR, "repos", folder_name)
+
 def extract_files_from_diff(diff_text: str):
     files = []
     for line in diff_text.split("\n"):
@@ -42,8 +45,6 @@ def classify_pr_risk(avg_score: float, impacts: list, max_depth: int) -> str:
 def calculate_pr_risk(folder_name: str, changed_files: List[str]) -> Dict[str, Any]:
     # Call analyze_impact once with full list
     impacts = analyze_impact(folder_name, changed_files)
-    # Build dependency graph once
-    repo_path = os.path.join("repos", folder_name)
     print("PR ENGINE REPO PATH:", repo_path)
     graph = build_dependency_graph(repo_path)
     # Reverse graph to get dependents (who depends on changed file)

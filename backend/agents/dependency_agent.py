@@ -55,6 +55,7 @@ def extract_imports(file_path):
 GRAPH_CACHE = {}
 
 def build_dependency_graph(repo_path):
+    repo_path = os.path.abspath(repo_path)
     if repo_path in GRAPH_CACHE:
         return GRAPH_CACHE[repo_path]
     G = nx.DiGraph()

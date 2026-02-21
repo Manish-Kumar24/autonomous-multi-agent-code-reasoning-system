@@ -12,11 +12,12 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_REPO_DIR = os.path.join(BASE_DIR, "repos")
+
 class ImpactRequest(BaseModel):
     folder_name: str
     changed_files: List[str]
-
-BASE_REPO_DIR = "repos"
 
 def compute_risk_score(direct, transitive, depth):
     return (direct * 2) + (transitive * 1.5) + depth

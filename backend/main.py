@@ -346,24 +346,19 @@ def pr_risk_analysis(request: PRRiskRequest):
         changed_files = extract_files_from_diff(request.git_diff)
     else:
         changed_files = request.changed_files or []
-    repo_path = f"repos/{request.folder_name}"
+    repo_path = os.path.join(REPO_DIR, request.folder_name)
     graph = build_dependency_graph(repo_path)
     print("GRAPH KEYS SAMPLE:", list(graph.nodes())[:20])
     print("CHANGED FILES:", changed_files)
     pr_data = calculate_pr_risk(request.folder_name, changed_files)
-    # ✅ Generate reviewer suggestion
     reviewer_suggestion = generate_reviewer_suggestion(pr_data)
     pr_data["reviewer_suggestion"] = reviewer_suggestion
-    # NEW: Structured testing recommendation
     testing_recommendation = generate_testing_recommendation(pr_data)
     pr_data["testing_recommendation"] = testing_recommendation
-    # ✅ AI Summary
     ai_summary = generate_pr_ai_summary(pr_data)
     pr_data["ai_analysis"] = ai_summary
-    # ✅ Confidence Metric
     confidence_data = calculate_confidence_metric(pr_data)
     pr_data["confidence"] = confidence_data
-    # ✅ Merge Decision Logic
     merge_decision = generate_merge_decision(pr_data, confidence_data)
     pr_data["merge_control"] = merge_decision
     return pr_data
