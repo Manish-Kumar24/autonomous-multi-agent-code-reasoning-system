@@ -151,7 +151,7 @@ Return STRICTLY valid JSON only:
     result = response.json()
     content = result["choices"][0]["message"]["content"]
     content = re.sub(r"```.*?\n", "", content)  
-    content = re.sub(r"```", "", content)       `
+    content = re.sub(r"```", "", content)       
     content = content.strip()
 
     try:
