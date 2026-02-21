@@ -28,6 +28,7 @@ from agents.impact_analyzer import (
 )
 
 app = FastAPI()
+print("PORT ENV:", os.environ.get("PORT"))
 
 # === CORS configuration ===
 origins = [
