@@ -336,6 +336,12 @@ def generate_testing_recommendation(pr_data):
 
 @app.post("/pr-risk-analysis")
 def pr_risk_analysis(request: PRRiskRequest):
+    print("===== DEBUG FILESYSTEM CHECK =====")
+    print("Current working dir:", os.getcwd())
+    print("Repos exists:", os.path.exists("repos"))
+    print("Express exists:", os.path.exists("repos/Express"))
+    print("Repos content:", os.listdir("repos") if os.path.exists("repos") else "NO REPOS DIR")
+    print("===================================")
     if request.git_diff:
         changed_files = extract_files_from_diff(request.git_diff)
     else:
