@@ -37,6 +37,7 @@ def analyze_impact(folder_name, changed_files):
     G = build_dependency_graph(repo_path)
     reverse_graph = build_reverse_graph(G)
     valid_files = [f for f in changed_files if f in G.nodes]
+    print("GRAPH NODE SAMPLE:", list(G.nodes)[:20])
     if not valid_files:
         return [{
             "file": "INVALID_INPUT",

@@ -1,22 +1,7 @@
 import os, re, networkx as nx
 
 IGNORED_DIRS = {
-    "node_modules",
-    ".git",
-    "dist",
-    "build",
-    "venv",
-    "__pycache__",
-    "test",
-    "tests",
-    "__tests__",
-    "examples",
-    "docs",
-    "coverage",
-    "fixtures",
-    "scripts",
-    "benchmark",
-    "__mocks__"
+    "node_modules", ".git", "dist", "build", "venv", "__pycache__", "test", "tests", "__tests__", "examples", "docs", "coverage", "fixtures", "scripts", "benchmark", "__mocks__"
 }
 
 IMPORT_REGEX = [
@@ -27,12 +12,7 @@ IMPORT_REGEX = [
 ]
 
 ENTRY_HINTS = (
-    "index",
-    "main",
-    "app",
-    "server",
-    "root",
-    "bootstrap"
+    "index", "main", "app", "server", "root", "bootstrap"
 )
 
 def is_internal_import(path: str) -> bool:
@@ -56,6 +36,11 @@ GRAPH_CACHE = {}
 
 def build_dependency_graph(repo_path):
     repo_path = os.path.abspath(repo_path)
+    print("SCANNING PATH:", repo_path)
+    for root, dirs, files in os.walk(repo_path):
+        print("ROOT:", root)
+        print("FILES FOUND:", files[:5])
+        break
     if repo_path in GRAPH_CACHE:
         return GRAPH_CACHE[repo_path]
     G = nx.DiGraph()
