@@ -10,7 +10,9 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-repo_path = os.path.join(BASE_DIR, "repos", folder_name)
+
+print("CWD:", os.getcwd())
+print("FILE DIR:", os.path.dirname(os.path.abspath(__file__)))
 
 def extract_files_from_diff(diff_text: str):
     files = []
@@ -26,13 +28,10 @@ def extract_files_from_diff(diff_text: str):
     return list(set(files))
 
 def classify_pr_risk(avg_score: float, impacts: list, max_depth: int) -> str:
-    # 1️⃣ If any file is CRITICAL → PR CRITICAL
     if any(impact["risk_level"] == "CRITICAL" for impact in impacts):
         return "CRITICAL"
-    # 2️⃣ If any file is HIGH and dependency depth is significant → PR HIGH
     if any(impact["risk_level"] == "HIGH" for impact in impacts) and max_depth >= 3:
         return "HIGH"
-    # 3️⃣ Fallback to aggregated score thresholds
     if avg_score >= 75:
         return "CRITICAL"
     elif avg_score >= 50:
@@ -43,11 +42,12 @@ def classify_pr_risk(avg_score: float, impacts: list, max_depth: int) -> str:
         return "LOW"
 
 def calculate_pr_risk(folder_name: str, changed_files: List[str]) -> Dict[str, Any]:
-    # Call analyze_impact once with full list
+    repo_path = os.path.join(BASE_DIR, "repos", folder_name)
+    print("PR ENGINE REPO PATH:", repo_path)
+    print("EXISTS?", os.path.exists(repo_path))
     impacts = analyze_impact(folder_name, changed_files)
     print("PR ENGINE REPO PATH:", repo_path)
     graph = build_dependency_graph(repo_path)
-    # Reverse graph to get dependents (who depends on changed file)
     reverse_graph = graph.reverse(copy=False)
     all_downstream_modules = []
     if not impacts:
@@ -72,20 +72,15 @@ def calculate_pr_risk(folder_name: str, changed_files: List[str]) -> Dict[str, A
         total_affected += direct + transitive
         max_depth = max(max_depth, depth)
         file_name = impact["file"]
-        # Collect downstream modules (blast radius)
         if file_name in reverse_graph:
             downstream = list(nx.descendants(reverse_graph, file_name))
             all_downstream_modules.extend(downstream)
-        
-    # 🔥 SMART DOWNSTREAM IMPACT RANKING
     unique_downstream = list(set(all_downstream_modules))
     scored_modules = []
     for module in unique_downstream:
         try:
-            # Count how many modules depend on this module
             module_dependents = nx.descendants(reverse_graph, module)
             dependent_count = len(module_dependents)
-            # Calculate max depth from this module
             max_depth_module = 0
             for target in module_dependents:
                 try:
@@ -102,15 +97,12 @@ def calculate_pr_risk(folder_name: str, changed_files: List[str]) -> Dict[str, A
             })
         except:
             pass
-    # Sort by impact score descending
     scored_modules = sorted(
         scored_modules,
         key=lambda x: x["impact_score"],
         reverse=True
     )
-    # Return top 3 modules
     high_risk_modules = [m["module"] for m in scored_modules[:3]]
-
     avg_score = total_score / len(impacts)
     classification = classify_pr_risk(avg_score, impacts, max_depth)
     return {
@@ -158,10 +150,8 @@ Return STRICTLY valid JSON only:
 
     result = response.json()
     content = result["choices"][0]["message"]["content"]
-
-    # 🔥 Robust Markdown Removal
-    content = re.sub(r"```.*?\n", "", content)  # remove opening ```
-    content = re.sub(r"```", "", content)       # remove closing ```
+    content = re.sub(r"```.*?\n", "", content)  
+    content = re.sub(r"```", "", content)       `
     content = content.strip()
 
     try:
