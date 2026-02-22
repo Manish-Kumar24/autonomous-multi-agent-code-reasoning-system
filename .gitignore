@@ -24,3 +24,6 @@ build/
 .env
 backend/.env
 .env
+
+# repo
+backend/repos/
