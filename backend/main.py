@@ -4,6 +4,7 @@ from pydantic import BaseModel, HttpUrl
 from typing import List
 import subprocess, os, uuid, shutil
 from agents.enterprise_decision_engine import build_enterprise_decision
+from agents.hybrid_governance_engine import compute_hybrid_merge_decision
 from agents.pr_risk_engine import (
     calculate_pr_risk,
     generate_pr_ai_summary
@@ -89,6 +90,8 @@ def pr_risk_analysis(request: PRRiskRequest):
         pr_data["ai_analysis"] = ai_summary
         enterprise_layer = build_enterprise_decision(pr_data)
         pr_data.update(enterprise_layer)
+        hybrid_layer = compute_hybrid_merge_decision(pr_data)
+        pr_data.update(hybrid_layer)
         return pr_data
     except subprocess.TimeoutExpired:
         raise HTTPException(
