@@ -41,11 +41,8 @@ def classify_pr_risk(avg_score: float, impacts: list, max_depth: int) -> str:
     else:
         return "LOW"
 
-def calculate_pr_risk(folder_name: str, changed_files: List[str]) -> Dict[str, Any]:
-    repo_path = os.path.join(BASE_DIR, "repos", folder_name)
-    print("PR ENGINE REPO PATH:", repo_path)
-    print("EXISTS?", os.path.exists(repo_path))
-    impacts = analyze_impact(folder_name, changed_files)
+def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any]:
+    impacts = analyze_impact(repo_path, changed_files)
     print("PR ENGINE REPO PATH:", repo_path)
     graph = build_dependency_graph(repo_path)
     reverse_graph = graph.reverse(copy=False)
@@ -131,7 +128,6 @@ Return STRICTLY valid JSON only:
   "risk_explanation": "Explain in exactly 3 sentences."
 }}
 """
-
     response = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
         headers={
@@ -147,13 +143,11 @@ Return STRICTLY valid JSON only:
             "temperature": 0.1
         }
     )
-
     result = response.json()
     content = result["choices"][0]["message"]["content"]
     content = re.sub(r"```.*?\n", "", content)  
     content = re.sub(r"```", "", content)       
     content = content.strip()
-
     try:
         return json.loads(content)
     except Exception as e:

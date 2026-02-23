@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from typing import Optional, List
-import os, uvicorn
+import os, uvicorn, subprocess, uuid, shutil
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -189,9 +189,8 @@ async def get_repo_risk_score(folder_name: str):
     }
 
 class PRRiskRequest(BaseModel):
-    folder_name: str
-    changed_files: Optional[List[str]] = None
-    git_diff: Optional[str] = None
+    repo_url: HttpUrl
+    changed_files: List[str]
 
 def generate_reviewer_suggestion(pr_data):
     classification = pr_data.get("classification", "LOW")
@@ -342,23 +341,47 @@ def pr_risk_analysis(request: PRRiskRequest):
     print("Express exists:", os.path.exists("repos/Express"))
     print("Repos content:", os.listdir("repos") if os.path.exists("repos") else "NO REPOS DIR")
     print("===================================")
-    if request.git_diff:
-        changed_files = extract_files_from_diff(request.git_diff)
-    else:
+    temp_dir = f"/tmp/{uuid.uuid4()}"
+    try:
+        # 1️⃣ Clone repo shallowly (safe for Railway free tier)
+        clone_command = [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            str(request.repo_url),
+            temp_dir
+        ]
+        result = subprocess.run(
+            clone_command,
+            capture_output=True,
+            text=True,
+            timeout=20
+        )
+        if result.returncode != 0:
+            raise HTTPException(status_code=500, detail=result.stderr)
+        # 2️⃣ Use cloned repo path
         changed_files = request.changed_files or []
-    repo_path = os.path.join(REPO_DIR, request.folder_name)
-    graph = build_dependency_graph(repo_path)
-    print("GRAPH KEYS SAMPLE:", list(graph.nodes())[:20])
-    print("CHANGED FILES:", changed_files)
-    pr_data = calculate_pr_risk(request.folder_name, changed_files)
-    reviewer_suggestion = generate_reviewer_suggestion(pr_data)
-    pr_data["reviewer_suggestion"] = reviewer_suggestion
-    testing_recommendation = generate_testing_recommendation(pr_data)
-    pr_data["testing_recommendation"] = testing_recommendation
-    ai_summary = generate_pr_ai_summary(pr_data)
-    pr_data["ai_analysis"] = ai_summary
-    confidence_data = calculate_confidence_metric(pr_data)
-    pr_data["confidence"] = confidence_data
-    merge_decision = generate_merge_decision(pr_data, confidence_data)
-    pr_data["merge_control"] = merge_decision
-    return pr_data
+        # Build dependency graph from temp repo
+        graph = build_dependency_graph(temp_dir)
+        # 🔥 IMPORTANT CHANGE:
+        # Instead of folder_name, pass temp_dir
+        pr_data = calculate_pr_risk(temp_dir, changed_files)
+        # Reviewer logic
+        reviewer_suggestion = generate_reviewer_suggestion(pr_data)
+        pr_data["reviewer_suggestion"] = reviewer_suggestion
+        testing_recommendation = generate_testing_recommendation(pr_data)
+        pr_data["testing_recommendation"] = testing_recommendation
+        ai_summary = generate_pr_ai_summary(pr_data)
+        pr_data["ai_analysis"] = ai_summary
+        confidence_data = calculate_confidence_metric(pr_data)
+        pr_data["confidence"] = confidence_data
+        merge_decision = generate_merge_decision(pr_data, confidence_data)
+        pr_data["merge_control"] = merge_decision
+        return pr_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # 3️⃣ Always cleanup (CRITICAL for free tier)
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)

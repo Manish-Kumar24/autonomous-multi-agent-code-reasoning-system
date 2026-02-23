@@ -12,13 +12,6 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_REPO_DIR = os.path.join(BASE_DIR, "repos")
-
-class ImpactRequest(BaseModel):
-    folder_name: str
-    changed_files: List[str]
-
 def compute_risk_score(direct, transitive, depth):
     return (direct * 2) + (transitive * 1.5) + depth
 
@@ -32,8 +25,9 @@ def classify_risk(score):
     else:
         return "LOW"
 
-def analyze_impact(folder_name, changed_files):
-    repo_path = os.path.join(BASE_REPO_DIR, folder_name)
+def analyze_impact(repo_path: str, changed_files: List[str]):
+    print("IMPACT ANALYZER REPO PATH:", repo_path)
+    print("EXISTS?", os.path.exists(repo_path))
     G = build_dependency_graph(repo_path)
     reverse_graph = build_reverse_graph(G)
     valid_files = [f for f in changed_files if f in G.nodes]
