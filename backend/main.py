@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from typing import List
 import subprocess, os, uuid, shutil
-
+from agents.enterprise_decision_agent import build_enterprise_decision
 from agents.pr_risk_engine import (
     calculate_pr_risk,
     generate_pr_ai_summary
@@ -87,6 +87,8 @@ def pr_risk_analysis(request: PRRiskRequest):
         # 3️⃣ AI Executive Summary
         ai_summary = generate_pr_ai_summary(pr_data)
         pr_data["ai_analysis"] = ai_summary
+        enterprise_layer = build_enterprise_decision(pr_data)
+        pr_data.update(enterprise_layer)
         return pr_data
     except subprocess.TimeoutExpired:
         raise HTTPException(
