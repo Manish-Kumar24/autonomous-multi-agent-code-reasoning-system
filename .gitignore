@@ -24,8 +24,9 @@ build/
 .env
 backend/.env
 .env
+*.pem
+private-key.pem
 
 # repo
 backend/repos/
 
-backend/*.pem
