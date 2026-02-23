@@ -155,17 +155,6 @@ def blast_radius(folder_name: str, file: str):
         "criticality_score": round(score, 2)
     }
 
-@app.post("/impact-analysis")
-def impact_analysis(req: ImpactRequest):
-    results = analyze_impact(req.folder_name, req.changed_files)
-    if not results:
-        return {"error": "No valid files found in repository"}
-    reasoning = get_executive_reasoning(results)
-    return {
-        "analysis": results,
-        "executive_summary": reasoning
-    }
-
 @app.get("/repo-risk-score")
 async def get_repo_risk_score(folder_name: str):
     repo_path = os.path.join(REPO_DIR, folder_name)
