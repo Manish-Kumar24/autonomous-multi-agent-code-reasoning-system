@@ -22,7 +22,6 @@ from blast_radius import (
     calculate_severity
 )
 from agents.impact_analyzer import (
-    ImpactRequest,
     analyze_impact,
     get_executive_reasoning
 )
