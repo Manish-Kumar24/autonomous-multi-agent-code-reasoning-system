@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from typing import List
 import subprocess, os, uuid, shutil
-from agents.enterprise_decision_agent import build_enterprise_decision
+from agents.enterprise_decision_engine import build_enterprise_decision
 from agents.pr_risk_engine import (
     calculate_pr_risk,
     generate_pr_ai_summary
