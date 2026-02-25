@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Request, Header, HTTPException, BackgroundTasks
 import json, tempfile, subprocess, shutil
 
-from services.github_auth import generate_installation_token
-from services.github_api import get_pr_files, post_pr_comment
+from services.github_auth import generate_installation_token, get_pr_files, post_pr_comment
 from utils.security import verify_signature
 from utils.logger import get_logger
 
