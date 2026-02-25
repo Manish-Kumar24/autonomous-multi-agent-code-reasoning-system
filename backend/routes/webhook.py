@@ -94,8 +94,8 @@ async def github_webhook(
     body = await request.body()
 
     # Verify signature
-    # if not verify_signature(body, x_hub_signature_256):
-    #     raise HTTPException(status_code=403, detail="Invalid signature")
+    if not verify_signature(body, x_hub_signature_256):
+        raise HTTPException(status_code=403, detail="Invalid signature")
 
     payload = json.loads(body)
 
