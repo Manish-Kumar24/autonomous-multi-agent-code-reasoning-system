@@ -6,11 +6,6 @@ from blast_radius import (
     build_reverse_graph,
     compute_blast_radius
 )
-from groq import Groq
-from dotenv import load_dotenv
-load_dotenv()
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def compute_risk_score(direct, transitive, depth):
     return (direct * 2) + (transitive * 1.5) + depth
@@ -63,39 +58,3 @@ def analyze_impact(repo_path: str, changed_files: List[str]):
             "depth": depth
         })
     return results
-
-def get_executive_reasoning(data):
-    prompt = f"""
-        You are a senior software architect.
-        Analyze the risk of this code change.
-        DATA:
-        {data}
-        Return STRICT JSON only.
-        No markdown.
-        No backticks.
-        No explanation outside JSON.
-        Format:
-        {{
-        "severity": "...",
-        "why_risky": "...",
-        "testing_recommendation": "...",
-        "developer_action": "..."
-        }}
-        """
-    completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2
-    )
-    content = completion.choices[0].message.content.strip()
-    # 🔥 Remove markdown fences if model adds them
-    content = re.sub(r"```json|```", "", content).strip()
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        return {
-            "severity": "UNKNOWN",
-            "why_risky": "LLM output parsing failed",
-            "testing_recommendation": "Manual review required",
-            "developer_action": "Inspect raw model output"
-        }

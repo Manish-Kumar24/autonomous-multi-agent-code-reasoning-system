@@ -4,6 +4,7 @@ from agents.impact_analyzer import analyze_impact
 import networkx as nx
 from agents.dependency_agent import build_dependency_graph
 from collections import Counter
+from intelligence.contextual_risk_engine import contextual_risk_score
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -43,6 +44,7 @@ def classify_pr_risk(avg_score: float, impacts: list, max_depth: int) -> str:
 
 def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any]:
     impacts = analyze_impact(repo_path, changed_files)
+    semantic_results = contextual_risk_score(repo_path, changed_files)
     print("PR ENGINE REPO PATH:", repo_path)
     graph = build_dependency_graph(repo_path)
     reverse_graph = graph.reverse(copy=False)
@@ -54,7 +56,9 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
             "total_files_affected": 0,
             "max_impact_depth": 0,
             "high_risk_modules": [],
-            "file_breakdown": []
+            "file_breakdown": [],
+            "semantic_risk": semantic_results,
+            "confidence_score": semantic_results["confidence"]
         }
     total_score = 0
     total_affected = 0
