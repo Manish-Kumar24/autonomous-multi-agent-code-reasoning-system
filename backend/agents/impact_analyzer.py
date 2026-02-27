@@ -26,17 +26,15 @@ def analyze_impact(repo_path: str, changed_files: List[str]):
     G = build_dependency_graph(repo_path)
     reverse_graph = build_reverse_graph(G)
     normalized_changed_files = []
-
     for f in changed_files:
-        f = f.replace("\\", "/")  # Windows safety
+        f = f.replace("\\", "/")
         f = f.lstrip("./")
-        f = f.split("/")[-1] if f not in G.nodes else f
         normalized_changed_files.append(f)
     valid_files = [f for f in normalized_changed_files if f in G.nodes]
     print("VALID FILES:", valid_files)
     print("TOTAL GRAPH NODES:", len(G.nodes))
     print("SAMPLE NODES:", list(G.nodes)[:20])
-    print("CHANGED FILES:", changed_files)
+    print("CHANGED FILES:", normalized_changed_files)
     if not valid_files:
         return [{
             "file": "INVALID_INPUT",

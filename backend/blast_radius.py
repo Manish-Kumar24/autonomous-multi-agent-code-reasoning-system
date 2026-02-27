@@ -1,11 +1,8 @@
 import networkx as nx
 from collections import deque
-from collections import deque
-
 # ✅ Reverse Graph (1 line with NetworkX — very senior)
 def build_reverse_graph(G: nx.DiGraph):
     return G.reverse(copy=False)
-
 def compute_blast_radius(target_file, reverse_graph):
     visited = set()
     queue = deque([(target_file, 0)])
@@ -19,7 +16,6 @@ def compute_blast_radius(target_file, reverse_graph):
                 max_depth = max(max_depth, next_depth)
                 queue.append((dependent, next_depth))
     return visited, max_depth
-
 # ✅ Criticality heuristic
 def calculate_criticality(dependent_count, max_depth):
     score = (dependent_count * 1.5) + (max_depth * 2)
@@ -30,7 +26,6 @@ def calculate_criticality(dependent_count, max_depth):
     else:
         risk = "LOW"
     return round(score, 2), risk
-
 # ✅ Executive-friendly severity layer
 def calculate_severity(score, depth):
     if score >= 25 or depth >= 5:
@@ -41,7 +36,6 @@ def calculate_severity(score, depth):
         return "MODERATE"
     else:
         return "LOW"
-
 def generate_reason(file, direct, transitive, depth, risk):
     if risk == "HIGH":
         return (

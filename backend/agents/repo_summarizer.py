@@ -1,23 +1,17 @@
-import os
-import json
+import os, json
 from core.llm import ask_llama
-
 IMPORTANT_FILES = [
-    # Primary documentation
     "README.md",
     ".github/workflows",
-    # Dependency + runtime
     "package.json",
     "requirements.txt",
     "pyproject.toml",
-    # 🔥 NEW — Elite signals
     "tsconfig.json",
     "Dockerfile",
     "docker-compose.yml",
     ".env.example",
     "Makefile"
 ]
-
 def read_important_files(repo_path: str) -> str:
     context_parts = []
     for file in IMPORTANT_FILES:
@@ -25,7 +19,6 @@ def read_important_files(repo_path: str) -> str:
         if os.path.exists(path):
             try:
                 with open(path, "r", errors="ignore") as f:
-                    # 🔥 Config files are usually small — read full
                     if file.lower() in [
                         "dockerfile",
                         "docker-compose.yml",
@@ -63,23 +56,17 @@ def summarize_repo(repo_path: str):
 You are a Principal Software Architect performing a deep technical audit of a code repository.
 Your job is NOT to summarize casually.
 Your job is to THINK like a senior engineer reviewing a production system.
-
 Be analytical.
 Be critical.
 Avoid politeness.
 Avoid vague statements.
-
 If information is missing, infer intelligently from available signals such as dependencies, tooling, repo structure, and documentation.
-
 ------------------------------------------------
-
 Return ONLY valid JSON first.
 DO NOT wrap it in markdown.
 DO NOT add numbering.
 DO NOT explain before the JSON.
-
 Use this schema:
-
 {
   "system": "Name and type of the system",
   "tech_stack": ["languages", "frameworks", "major tools"],
@@ -89,11 +76,8 @@ Use this schema:
   "risks": ["architectural or operational risks"],
   "notable_signals": ["important engineering indicators discovered in the repo"]
 }
-
 ------------------------------------------------
-
 ANALYSIS RULES:
-
 • Complexity MUST be justified internally using signals like:
   - dependency count
   - build tooling
@@ -101,10 +85,8 @@ ANALYSIS RULES:
   - modular structure
   - testing surface
   - CI/CD presence
-
 • NEVER leave "risks" empty.
 Every real-world system has tradeoffs.
-
 Common risks to consider:
 - dependency explosion
 - security attack surface
@@ -114,7 +96,6 @@ Common risks to consider:
 - upgrade fragility
 - tight coupling
 - developer experience friction
-
 • "notable_signals" should highlight strong engineering practices such as:
 - presence of tests
 - linting
@@ -123,25 +104,17 @@ Common risks to consider:
 - CI pipelines
 - code generation
 - plugin systems
-
 ------------------------------------------------
-
 After the JSON, write EXACTLY:
-
 ===EXPLANATION===
-
 Then produce a sharp executive-level explanation (5–8 sentences).
-
 Write like you are briefing a CTO.
-
 Be dense.
 Be technical.
 No fluff.
 No repetition.
 No marketing language.
-
 ------------------------------------------------
-
 """
         },
         {
@@ -150,7 +123,6 @@ No marketing language.
         }
     ]
     response = ask_llama(messages)
-    # 🔥 Parse safely (senior pattern)
     try:
         json_part, explanation = response.split("===EXPLANATION===")
         parsed_json = json.loads(json_part.strip())
@@ -160,7 +132,6 @@ No marketing language.
             "error": False
         }
     except Exception:
-        # Never crash your agent — return recoverable output
         return {
             "analysis": None,
             "explanation": response,

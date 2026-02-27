@@ -1,5 +1,4 @@
 import ast, os
-
 def extract_functions(file_path):
     try:
         with open(file_path, "r") as f:

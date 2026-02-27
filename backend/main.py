@@ -11,23 +11,18 @@ from agents.pr_risk_engine import (
     generate_pr_ai_summary
 )
 import hmac, hashlib, json, requests, os
-
 # ==========================================================
 # App Initialization
 # ==========================================================
-
 app = FastAPI(
     title="Autonomous PR Risk Engine",
     version="1.0.0",
     description="Stateless architectural impact analysis for pull requests."
 )
-
 app.include_router(webhook_router)
-
 # ==========================================================
 # CORS Configuration (Adjust in production)
 # ==========================================================
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Restrict to frontend domain in prod
@@ -35,19 +30,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # ==========================================================
 # Request Schema
 # ==========================================================
-
 class PRRiskRequest(BaseModel):
     repo_url: HttpUrl
     changed_files: List[str]
-
 # ==========================================================
 # Health Check
 # ==========================================================
-
 @app.get("/")
 def health():
     return {
@@ -55,24 +46,15 @@ def health():
         "service": "pr-risk-engine",
         "mode": "stateless"
     }
-
 # ==========================================================
 # PR Risk Analysis Endpoint
 # ==========================================================
-
 @app.post("/pr-risk-analysis")
 def pr_risk_analysis(request: PRRiskRequest):
     temp_dir = f"/tmp/{uuid.uuid4()}"
     try:
         # 1️⃣ Shallow clone (free-tier safe)
-        clone_command = [
-            "git",
-            "clone",
-            "--depth",
-            "1",
-            str(request.repo_url),
-            temp_dir
-        ]
+        clone_command = ["git", "clone", "--depth", "1", str(request.repo_url), temp_dir]
         result = subprocess.run(
             clone_command,
             capture_output=True,
