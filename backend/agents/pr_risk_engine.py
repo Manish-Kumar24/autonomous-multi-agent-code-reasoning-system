@@ -1,9 +1,7 @@
 import os, re, json, requests
 from typing import List, Dict, Any
-from agents.impact_analyzer import analyze_impact  
+from agents.impact_engine import analyze_impact, build_dependency_graph
 import networkx as nx
-from agents.dependency_agent import build_dependency_graph
-from collections import Counter
 from intelligence.contextual_risk_engine import contextual_risk_score
 from dotenv import load_dotenv
 load_dotenv()

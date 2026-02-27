@@ -1,5 +1,4 @@
-import os
-import json
+import os, json
 
 def detect_stack(repo_path: str):
     stack = {
