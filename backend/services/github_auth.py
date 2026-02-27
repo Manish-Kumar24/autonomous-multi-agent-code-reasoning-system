@@ -1,4 +1,7 @@
-import os, jwt, time, requests
+import os
+import jwt
+import time
+import requests
 GITHUB_APP_ID = os.getenv("GITHUB_APP_ID")
 GITHUB_PRIVATE_KEY = os.getenv("GITHUB_PRIVATE_KEY")
 def generate_jwt():
