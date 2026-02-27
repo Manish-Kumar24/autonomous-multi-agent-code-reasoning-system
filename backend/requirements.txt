@@ -1,8 +1,43 @@
+# ==========================
+# Core Backend Framework
+# ==========================
 fastapi==0.110.0
-uvicorn[standard]==0.27.1
-pydantic==2.6.1
+uvicorn[standard]==0.29.0
+
+# ==========================
+# Data Validation
+# ==========================
+pydantic==2.6.4
+
+# ==========================
+# Environment Management
+# ==========================
 python-dotenv==1.0.1
+
+# ==========================
+# HTTP Requests
+# ==========================
 requests==2.31.0
-groq==0.4.2
-typing_extensions==4.10.0
+httpx==0.27.0
+
+# ==========================
+# JWT Authentication
+# ==========================
 PyJWT==2.8.0
+
+# ==========================
+# Graph & Dependency Analysis
+# ==========================
+networkx==3.2.1
+
+# ==========================
+# AI / LLM Integration
+# (Keep only what you actually use)
+# ==========================
+openai==1.12.0
+groq==0.4.2
+
+# ==========================
+# Logging / Utilities
+# ==========================
+python-multipart==0.0.9
