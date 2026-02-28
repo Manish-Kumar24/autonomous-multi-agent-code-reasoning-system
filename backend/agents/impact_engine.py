@@ -58,7 +58,7 @@ def build_dependency_graph(repo_path):
         for file in files:
             if file.endswith((".py")):
                 full_path = os.path.join(root, file)
-                relative_path = os.path.relpath(full_path, repo_path)
+                relative_path = os.path.relpath(full_path, repo_path).replace("\\", "/").lstrip("./")
                 repo_files.add(relative_path)
                 G.add_node(relative_path)
     print("TOTAL FILES:", len(repo_files))
@@ -193,9 +193,10 @@ def analyze_impact(repo_path: str, changed_files: List[str]):
         f = f.lstrip("./")
         normalized_changed_files.append(f)
     valid_files = []
+    graph_nodes = {node.replace("\\", "/").lstrip("./") for node in G.nodes}
     for changed in normalized_changed_files:
-        for node in G.nodes:
-            if node.endswith(changed):
+        for node in graph_nodes:
+            if node == changed:
                 valid_files.append(node)
     print("VALID FILES:", valid_files)
     print("TOTAL GRAPH NODES:", len(G.nodes))
