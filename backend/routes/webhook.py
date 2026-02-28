@@ -50,8 +50,9 @@ def process_pr_event(payload: dict):
 ### 📊 Impact Summary
 - Total Files Affected: {pr_data['total_files_affected']}
 - Max Dependency Depth: {pr_data['max_impact_depth']}
-- High Risk Modules: {high_risk_modules}
 
+**High Risk Modules:**
+{high_risk_modules}
 ---
 
 ### 🧠 AI Analysis
