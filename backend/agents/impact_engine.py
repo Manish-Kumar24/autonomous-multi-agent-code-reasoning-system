@@ -10,6 +10,7 @@ IGNORED_DIRS = {
     "docs", "coverage", "fixtures", "scripts",
     "benchmark", "__mocks__"
 }
+GRAPH_CACHE = {}
 def extract_imports(file_path):
     imports = []
     try:
