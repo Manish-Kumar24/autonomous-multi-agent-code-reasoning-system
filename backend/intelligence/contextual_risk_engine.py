@@ -1,7 +1,6 @@
 import os
 from intelligence.semantic_analyzer import detect_sensitive_keywords
 from intelligence.ast_parser import extract_functions
-
 def contextual_risk_score(repo_path, changed_files):
     risk_score = 0
     reasons = []

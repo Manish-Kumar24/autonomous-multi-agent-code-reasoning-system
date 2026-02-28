@@ -1,29 +1,18 @@
 from agents.policy_config import GovernancePolicy
-
 def compute_hybrid_merge_decision(pr_data: dict) -> dict:
-
     risk_score = pr_data.get("pr_risk_score", 0)
     depth = pr_data.get("max_impact_depth", 0)
     ai_data = pr_data.get("ai_analysis", {})
     ai_signal = ai_data.get("merge_readiness", "MEDIUM")
-
     governance_score = 0
-
-    # Risk contribution
     governance_score += min(50, risk_score * GovernancePolicy.RISK_WEIGHT)
-
-    # Depth contribution
     governance_score += min(30, depth * GovernancePolicy.DEPTH_WEIGHT)
-
-    # AI contribution
     if ai_signal == "LOW":
         governance_score += GovernancePolicy.AI_LOW_WEIGHT
     elif ai_signal == "MEDIUM":
         governance_score += GovernancePolicy.AI_MEDIUM_WEIGHT
     else:
         governance_score += GovernancePolicy.AI_HIGH_WEIGHT
-
-    # Decision thresholds
     if governance_score >= GovernancePolicy.BLOCK_THRESHOLD:
         final_decision = "BLOCK"
         level = "CRITICAL"
@@ -33,7 +22,6 @@ def compute_hybrid_merge_decision(pr_data: dict) -> dict:
     else:
         final_decision = "ALLOW"
         level = "SAFE"
-
     return {
         "hybrid_governance": {
             "governance_score": round(governance_score, 2),

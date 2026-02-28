@@ -1,40 +1,25 @@
 import os, re, json, networkx as nx
 from typing import List
-
-# If blast_radius.py is still separate, keep this import
 from blast_radius import (
     build_reverse_graph,
     compute_blast_radius
 )
-
-# ==========================================================
-# DEPENDENCY GRAPH SECTION
-# ==========================================================
-
 IGNORED_DIRS = {
     "node_modules", ".git", "dist", "build", "venv",
     "__pycache__", "test", "tests", "__tests__", "examples",
     "docs", "coverage", "fixtures", "scripts",
     "benchmark", "__mocks__"
 }
-
 IMPORT_REGEX = [
     r"import\s+.*\s+from\s+['\"](.*?)['\"]",
     r"require\(['\"](.*?)['\"]\)",
     r"from\s+([\w\.]+)\s+import",
     r"import\s+([\w\.]+)"
 ]
-
-ENTRY_HINTS = (
-    "index", "main", "app", "server", "root", "bootstrap"
-)
-
+ENTRY_HINTS = ("index", "main", "app", "server", "root", "bootstrap")
 GRAPH_CACHE = {}
-
 def is_internal_import(path: str) -> bool:
     return path.startswith(".")
-
-
 def extract_imports(file_path):
     imports = []
     try:
@@ -48,25 +33,17 @@ def extract_imports(file_path):
     except Exception as e:
         print(f"[IMPORT PARSE ERROR] {file_path} -> {e}")
     return imports
-
-
 def build_dependency_graph(repo_path):
     repo_path = os.path.abspath(repo_path)
-
     print("SCANNING PATH:", repo_path)
-
     for root, dirs, files in os.walk(repo_path):
         print("ROOT:", root)
         print("FILES FOUND:", files[:5])
         break
-
     if repo_path in GRAPH_CACHE:
         return GRAPH_CACHE[repo_path]
-
     G = nx.DiGraph()
     repo_files = set()
-
-    # PASS 1 — collect files
     for root, dirs, files in os.walk(repo_path):
         dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
         for file in files:
@@ -75,20 +52,15 @@ def build_dependency_graph(repo_path):
                 relative_path = os.path.relpath(full_path, repo_path)
                 repo_files.add(relative_path)
                 G.add_node(relative_path)
-
     print("TOTAL FILES:", len(repo_files))
-
-    # PASS 2 — build edges
     for file in repo_files:
         full_path = os.path.join(repo_path, file)
         imports = extract_imports(full_path)
-
         for imp in imports:
             base_dir = os.path.dirname(file)
             resolved_path = os.path.normpath(
                 os.path.join(base_dir, imp)
             )
-
             candidates = [
                 resolved_path,
                 resolved_path + ".js",
@@ -96,17 +68,12 @@ def build_dependency_graph(repo_path):
                 resolved_path + ".py",
                 os.path.join(resolved_path, "index.js"),
             ]
-
             for candidate in candidates:
                 if candidate in repo_files:
                     G.add_edge(file, candidate)
-
     print("TOTAL EDGES:", len(G.edges))
-
     GRAPH_CACHE[repo_path] = G
     return G
-
-
 def analyze_graph(G):
     if len(G.nodes) == 0:
         return {
@@ -115,35 +82,28 @@ def analyze_graph(G):
             "terminal_modules": [],
             "cycles_detected": False
         }
-
     def entry_score(node_tuple):
         node, degree = node_tuple
         hint_bonus = any(h in node.lower() for h in ENTRY_HINTS)
         depth_penalty = node.count(os.sep)
         root_bonus = 3 if os.sep not in node else 0
         return (degree * 2) + hint_bonus - depth_penalty + root_bonus
-
     def compute_health_score(G, cycles_detected, max_depth, bus_factor_risks):
         score = 10.0
-
         if cycles_detected:
             score -= 3.5
-
         if max_depth is not None:
             if max_depth >= 6:
                 score -= 2.5
             elif max_depth >= 4:
                 score -= 1.2
-
         if bus_factor_risks:
             top_dependents = bus_factor_risks[0]["dependents"]
             if top_dependents >= 10:
                 score -= 2
             elif top_dependents >= 5:
                 score -= 1
-
         return round(max(score, 1.0), 1)
-
     def health_label(score):
         if score >= 8.5:
             return "EXCELLENT"
@@ -153,20 +113,17 @@ def analyze_graph(G):
             return "MODERATE"
         else:
             return "HIGH_RISK"
-
     probable_entry_points = sorted(
         G.out_degree,
         key=entry_score,
         reverse=True
     )[:5]
     probable_entry_points = [node for node, _ in probable_entry_points]
-
     bus_factor_risks = sorted(
         [(node, deg) for node, deg in G.in_degree if deg > 0],
         key=lambda x: x[1],
         reverse=True
     )[:5]
-
     bus_factor_risks = [
         {
             "file": node,
@@ -174,29 +131,23 @@ def analyze_graph(G):
         }
         for node, degree in bus_factor_risks
     ]
-
     terminal_modules = sorted(
         [node for node in G.nodes if G.out_degree(node) == 0],
         key=lambda x: G.in_degree(x),
         reverse=True
     )[:5]
-
     cycles_detected = not nx.is_directed_acyclic_graph(G)
-
     if not cycles_detected and len(G.nodes) > 0:
         max_dependency_depth = nx.dag_longest_path_length(G)
     else:
         max_dependency_depth = None
-
     architecture_health_score = compute_health_score(
         G,
         cycles_detected,
         max_dependency_depth,
         bus_factor_risks
     )
-
     architecture_health = health_label(architecture_health_score)
-
     return {
         "probable_entry_points": probable_entry_points,
         "bus_factor_risks": bus_factor_risks,
@@ -211,22 +162,12 @@ def analyze_graph(G):
             "density": round(nx.density(G), 4)
         }
     }
-
-
 def dependency_agent(repo_path):
     graph = build_dependency_graph(repo_path)
     intelligence = analyze_graph(graph)
     return intelligence
-
-
-# ==========================================================
-# IMPACT ANALYZER SECTION
-# ==========================================================
-
 def compute_risk_score(direct, transitive, depth):
     return (direct * 2) + (transitive * 1.5) + depth
-
-
 def classify_risk(score):
     if score >= 20:
         return "CRITICAL"
@@ -236,28 +177,25 @@ def classify_risk(score):
         return "MODERATE"
     else:
         return "LOW"
-
-
 def analyze_impact(repo_path: str, changed_files: List[str]):
     print("IMPACT ANALYZER REPO PATH:", repo_path)
     print("EXISTS?", os.path.exists(repo_path))
-
     G = build_dependency_graph(repo_path)
     reverse_graph = build_reverse_graph(G)
-
     normalized_changed_files = []
     for f in changed_files:
         f = f.replace("\\", "/")
         f = f.lstrip("./")
         normalized_changed_files.append(f)
-
-    valid_files = [f for f in normalized_changed_files if f in G.nodes]
-
+    valid_files = []
+    for changed in normalized_changed_files:
+        for node in G.nodes:
+            if node.endswith(changed):
+                valid_files.append(node)
     print("VALID FILES:", valid_files)
     print("TOTAL GRAPH NODES:", len(G.nodes))
     print("SAMPLE NODES:", list(G.nodes)[:20])
     print("CHANGED FILES:", normalized_changed_files)
-
     if not valid_files:
         return [{
             "file": "INVALID_INPUT",
@@ -270,20 +208,15 @@ def analyze_impact(repo_path: str, changed_files: List[str]):
             "debug_changed_files": changed_files,
             "debug_available_files": list(G.nodes)[:10]
         }]
-
     results = []
-
     for file in valid_files:
         if file not in G:
             continue
-
         dependents, depth = compute_blast_radius(file, reverse_graph)
         direct = len(list(reverse_graph.successors(file)))
         transitive = len(dependents)
-
         score = compute_risk_score(direct, transitive, depth)
         risk = classify_risk(score)
-
         results.append({
             "file": file,
             "risk_score": round(score, 2),
@@ -292,5 +225,4 @@ def analyze_impact(repo_path: str, changed_files: List[str]):
             "transitive_dependents": transitive,
             "depth": depth
         })
-
     return results

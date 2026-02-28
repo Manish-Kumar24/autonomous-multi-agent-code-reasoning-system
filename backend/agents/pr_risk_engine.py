@@ -5,14 +5,8 @@ import networkx as nx
 from intelligence.contextual_risk_engine import contextual_risk_score
 from dotenv import load_dotenv
 load_dotenv()
-
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-print("CWD:", os.getcwd())
-print("FILE DIR:", os.path.dirname(os.path.abspath(__file__)))
-
 def extract_files_from_diff(diff_text: str):
     files = []
     for line in diff_text.split("\n"):
@@ -21,14 +15,11 @@ def extract_files_from_diff(diff_text: str):
             if len(parts) >= 3:
                 file_path = parts[2].replace("a/", "").strip()
                 # Normalize path
-                file_path = file_path.replace("backend/", "")
                 file_path = file_path.lstrip("./")
                 files.append(file_path)
     return list(set(files))
-
 STRUCTURAL_WEIGHT = 0.6
 SEMANTIC_WEIGHT = 0.4
-
 def classify_final_score(score):
     if score >= 75:
         return "CRITICAL"
@@ -38,7 +29,6 @@ def classify_final_score(score):
         return "MODERATE"
     else:
         return "LOW"
-
 def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any]:
     impacts = analyze_impact(repo_path, changed_files)
     if not impacts:
@@ -62,25 +52,19 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
         total_score += impact["risk_score"]
         total_affected += impact["direct_dependents"] + impact["transitive_dependents"]
         max_depth = max(max_depth, impact["depth"])
-
         file_name = impact["file"]
         if file_name in reverse_graph:
             downstream = list(nx.descendants(reverse_graph, file_name))
             all_downstream_modules.extend(downstream)
     avg_score = total_score / len(impacts)
-    # ---- SEMANTIC LAYER ----
     semantic_results = contextual_risk_score(repo_path, changed_files)
-    # ---- NORMALIZATION ----
     structural_norm = min(avg_score / 30, 1.0)
     semantic_norm = min(semantic_results["semantic_score"] / 30, 1.0)
-    # ---- FUSION ----
     final_risk_score = (
         structural_norm * STRUCTURAL_WEIGHT +
         semantic_norm * SEMANTIC_WEIGHT
     ) * 100
-    # ---- CLASSIFICATION ----
     classification = classify_final_score(final_risk_score)
-    # ---- HIGH RISK MODULES ----
     unique_downstream = list(set(all_downstream_modules))
     high_risk_modules = unique_downstream[:3]
     return {
@@ -103,7 +87,6 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
         "semantic_risk": semantic_results,
         "confidence_score": semantic_results["confidence"]
     }
-
 def generate_pr_ai_summary(pr_data):
     prompt = f"""
 You are a senior engineering reviewer.
