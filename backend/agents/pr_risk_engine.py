@@ -57,10 +57,17 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
             all_impacted_files.update(downstream)
             # Rank by in-degree (true centrality proxy)
             for module in downstream:
+                # Skip documentation, examples, test artifacts
+                if module.startswith(("docs_src/", "examples/", "tests/", "test/")):
+                    continue
                 centrality = graph.in_degree(module)
                 high_risk_candidates.append((module, centrality))
     # Unique impacted files count
-    total_affected = len(all_impacted_files)
+    runtime_impacted = {
+        f for f in all_impacted_files
+        if not f.startswith(("docs_src/", "examples/", "tests/", "test/"))
+    }
+    total_affected = len(runtime_impacted)
     # Rank high risk modules by dependency centrality
     high_risk_candidates = sorted(
         high_risk_candidates,
