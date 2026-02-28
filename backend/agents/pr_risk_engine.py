@@ -53,9 +53,9 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
         root_file = impact["file"]
         if root_file in graph:
             # Get runtime dependents using original graph logic
-            impacted = nx.ancestors(graph, root_file)
+            reverse_graph = graph.reverse(copy=False)
             runtime_impacted = {
-                f for f in impacted
+                f for f in nx.descendants(reverse_graph, root_file)
                 if not f.startswith(("docs_src/", "examples/", "tests/", "test/"))
             }
             all_impacted_files.update(runtime_impacted)
@@ -79,7 +79,7 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
     avg_structural = total_structural_score / len(impacts)
     # Normalize structural score relative to repo size
     repo_size = len(graph.nodes)
-    structural_norm = min((total_affected / max(repo_size, 1)), 1.0)
+    structural_norm = min((total_affected / max(10, repo_size * 0.05)), 1.0)
     semantic_results = contextual_risk_score(repo_path, changed_files)
     semantic_norm = min(semantic_results["semantic_score"] / 30, 1.0)
     final_risk_score = (
