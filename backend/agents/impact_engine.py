@@ -11,21 +11,37 @@ IGNORED_DIRS = {
     "benchmark", "__mocks__"
 }
 GRAPH_CACHE = {}
+
 def extract_imports(file_path):
     imports = []
+    if not file_path.endswith(".py"):
+        return imports
     try:
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-            tree = ast.parse(f.read())
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imports.append(alias.name)
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    imports.append(node.module)
+            source = f.read()
+        try:
+            tree = ast.parse(source)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        imports.append(alias.name)
+                elif isinstance(node, ast.ImportFrom):
+                    if node.module:
+                        imports.append(node.module)
+        except SyntaxError:
+            # Fallback regex-based extraction
+            for line in source.splitlines():
+                line = line.strip()
+                if line.startswith("import "):
+                    module = line.replace("import ", "").split(" as ")[0]
+                    imports.append(module)
+                elif line.startswith("from "):
+                    module = line.replace("from ", "").split(" import ")[0]
+                    imports.append(module)
     except Exception as e:
-        print(f"[AST IMPORT ERROR] {file_path} -> {e}")
+        print(f"[IMPORT PARSE ERROR] {file_path} -> {e}")
     return imports
+
 def build_dependency_graph(repo_path):
     repo_path = os.path.abspath(repo_path)
     print("SCANNING PATH:", repo_path)
@@ -40,7 +56,7 @@ def build_dependency_graph(repo_path):
     for root, dirs, files in os.walk(repo_path):
         dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
         for file in files:
-            if file.endswith((".js", ".ts", ".py")):
+            if file.endswith((".py")):
                 full_path = os.path.join(root, file)
                 relative_path = os.path.relpath(full_path, repo_path)
                 repo_files.add(relative_path)
