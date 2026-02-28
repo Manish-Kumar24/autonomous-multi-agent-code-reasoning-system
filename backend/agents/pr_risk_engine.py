@@ -118,7 +118,7 @@ Given:
 - Classification: {pr_data["classification"]}
 - Total affected files: {pr_data["total_files_affected"]}
 - Max dependency depth: {pr_data["max_impact_depth"]}
-- High risk modules: {pr_data["formatted_modules"]}
+- High risk modules: {formatted_modules}
 Return STRICTLY valid JSON only:
 {{
   "review_focus": "...",
