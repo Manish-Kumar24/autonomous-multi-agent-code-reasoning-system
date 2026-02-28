@@ -31,7 +31,7 @@ def classify_final_score(score):
         return "LOW"
 def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any]:
     impacts = analyze_impact(repo_path, changed_files)
-    if not impacts:
+    if impacts and impacts[0].get("file") == "INVALID_INPUT":
         return {
             "pr_risk_score": 0,
             "classification": "LOW",
@@ -43,7 +43,6 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
             "confidence_score": 0.5
         }
     graph = build_dependency_graph(repo_path)
-    reverse_graph = graph.reverse(copy=False)
     total_structural_score = 0
     max_depth = 0
     all_impacted_files = set()
@@ -52,14 +51,15 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
         total_structural_score += impact["risk_score"]
         max_depth = max(max_depth, impact["depth"])
         root_file = impact["file"]
-        if root_file in reverse_graph:
-            downstream = set(nx.descendants(reverse_graph, root_file))
-            all_impacted_files.update(downstream)
-            # Rank by in-degree (true centrality proxy)
-            for module in downstream:
-                # Skip documentation, examples, test artifacts
-                if module.startswith(("docs_src/", "examples/", "tests/", "test/")):
-                    continue
+        if root_file in graph:
+            # Get runtime dependents using original graph logic
+            impacted = nx.ancestors(graph, root_file)
+            runtime_impacted = {
+                f for f in impacted
+                if not f.startswith(("docs_src/", "examples/", "tests/", "test/"))
+            }
+            all_impacted_files.update(runtime_impacted)
+            for module in runtime_impacted:
                 centrality = graph.in_degree(module)
                 high_risk_candidates.append((module, centrality))
     # Unique impacted files count
