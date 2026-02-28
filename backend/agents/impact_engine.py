@@ -7,7 +7,8 @@ from blast_radius import (
 IGNORED_DIRS = {
     "node_modules", ".git", "dist", "build", "venv",
     "__pycache__", "test", "tests", "__tests__", "examples",
-    "docs", "coverage", "fixtures", "scripts",
+    "docs", "docs_src", "tutorial", "tutorials",
+    "coverage", "fixtures", "scripts",
     "benchmark", "__mocks__"
 }
 GRAPH_CACHE = {}
@@ -50,7 +51,12 @@ def build_dependency_graph(repo_path):
     G = nx.DiGraph()
     repo_files = set()
     for root, dirs, files in os.walk(repo_path):
-        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
+        dirs[:] = [
+            d for d in dirs
+            if d not in IGNORED_DIRS
+            and not d.startswith("docs")
+            and not d.startswith("example")
+        ]
         for file in files:
             if file.endswith((".py")):
                 full_path = os.path.join(root, file)
