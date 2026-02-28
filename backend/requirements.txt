@@ -41,3 +41,6 @@ groq==0.4.2
 # Logging / Utilities
 # ==========================
 python-multipart==0.0.9
+
+PyJWT[crypto]
+cryptography
