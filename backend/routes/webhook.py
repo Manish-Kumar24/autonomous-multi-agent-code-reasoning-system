@@ -34,9 +34,18 @@ def process_pr_event(payload: dict):
             pr_data["ai_analysis"] = generate_pr_ai_summary(pr_data)
             pr_data.update(build_enterprise_decision(pr_data))
             pr_data.update(compute_hybrid_merge_decision(pr_data))
-            high_risk_modules = "\n".join(
-                [f"- `{m}`" for m in pr_data["high_risk_modules"]]
-            )
+            high_risk_modules_list = [
+                f"- `{m}`" for m in pr_data["high_risk_modules"]
+            ]
+            high_risk_modules = "\n".join(high_risk_modules_list)
+            # ✅ Sanitize AI output to preserve __init__.py formatting
+            review_focus = pr_data["ai_analysis"]["review_focus"]
+            testing_strategy = pr_data["ai_analysis"]["testing_strategy"]
+            risk_explanation = pr_data["ai_analysis"]["risk_explanation"]
+            for module in pr_data["high_risk_modules"]:
+                review_focus = review_focus.replace(module, f"`{module}`")
+                testing_strategy = testing_strategy.replace(module, f"`{module}`")
+                risk_explanation = risk_explanation.replace(module, f"`{module}`")
             comment_body = f"""
 ## 🚨 PR Governance Report
 
@@ -57,12 +66,17 @@ def process_pr_event(payload: dict):
 
 ### 🧠 AI Analysis
 
-**Review Focus:** {pr_data['ai_analysis']['review_focus']}  
-**Testing Strategy:** {pr_data['ai_analysis']['testing_strategy']}  
-**Merge Readiness:** {pr_data['ai_analysis']['merge_readiness']}  
+**Review Focus:**  
+{review_focus}
+
+**Testing Strategy:**  
+{testing_strategy}
+
+**Merge Readiness:**  
+{pr_data['ai_analysis']['merge_readiness']}
 
 **Risk Explanation:**  
-{pr_data['ai_analysis']['risk_explanation']}
+{risk_explanation}
 """
             post_pr_comment(repo_full_name, pr_number, access_token, comment_body)
             logger.info(f"PR #{pr_number} processed successfully.")
@@ -70,6 +84,7 @@ def process_pr_event(payload: dict):
             shutil.rmtree(temp_dir)
     except Exception as e:
         logger.error(f"Error processing PR: {str(e)}")
+
 @router.post("/github-webhook")
 async def github_webhook(
     request: Request,
