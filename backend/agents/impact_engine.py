@@ -1,4 +1,4 @@
-import os, re, json, networkx as nx
+import os, re, json, ast, networkx as nx
 from typing import List
 from blast_radius import (
     build_reverse_graph,
@@ -10,28 +10,20 @@ IGNORED_DIRS = {
     "docs", "coverage", "fixtures", "scripts",
     "benchmark", "__mocks__"
 }
-IMPORT_REGEX = [
-    r"import\s+.*\s+from\s+['\"](.*?)['\"]",
-    r"require\(['\"](.*?)['\"]\)",
-    r"from\s+([\w\.]+)\s+import",
-    r"import\s+([\w\.]+)"
-]
-ENTRY_HINTS = ("index", "main", "app", "server", "root", "bootstrap")
-GRAPH_CACHE = {}
-def is_internal_import(path: str) -> bool:
-    return path.startswith(".")
 def extract_imports(file_path):
     imports = []
     try:
-        with open(file_path, "r", errors="ignore") as f:
-            content = f.read()
-        for pattern in IMPORT_REGEX:
-            matches = re.findall(pattern, content)
-            for m in matches:
-                if is_internal_import(m):
-                    imports.append(m)
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            tree = ast.parse(f.read())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    imports.append(alias.name)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    imports.append(node.module)
     except Exception as e:
-        print(f"[IMPORT PARSE ERROR] {file_path} -> {e}")
+        print(f"[AST IMPORT ERROR] {file_path} -> {e}")
     return imports
 def build_dependency_graph(repo_path):
     repo_path = os.path.abspath(repo_path)
@@ -57,21 +49,17 @@ def build_dependency_graph(repo_path):
         full_path = os.path.join(repo_path, file)
         imports = extract_imports(full_path)
         for imp in imports:
-            base_dir = os.path.dirname(file)
-            resolved_path = os.path.normpath(
-                os.path.join(base_dir, imp)
-            )
+            module_path = imp.replace(".", "/")
+
             candidates = [
-                resolved_path,
-                resolved_path + ".js",
-                resolved_path + ".ts",
-                resolved_path + ".py",
-                os.path.join(resolved_path, "index.js"),
+                module_path + ".py",
+                os.path.join(module_path, "__init__.py"),
             ]
             for candidate in candidates:
                 if candidate in repo_files:
                     G.add_edge(file, candidate)
     print("TOTAL EDGES:", len(G.edges))
+    print("GRAPH SAMPLE EDGES:", list(G.edges())[:20])
     GRAPH_CACHE[repo_path] = G
     return G
 def analyze_graph(G):
