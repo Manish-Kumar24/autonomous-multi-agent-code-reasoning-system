@@ -42,36 +42,49 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
             "semantic_risk": {},
             "confidence_score": 0.5
         }
-    total_score = 0
-    total_affected = 0
-    max_depth = 0
     graph = build_dependency_graph(repo_path)
     reverse_graph = graph.reverse(copy=False)
-    all_downstream_modules = []
+    total_structural_score = 0
+    max_depth = 0
+    all_impacted_files = set()
+    high_risk_candidates = []
     for impact in impacts:
-        total_score += impact["risk_score"]
-        total_affected += impact["direct_dependents"] + impact["transitive_dependents"]
+        total_structural_score += impact["risk_score"]
         max_depth = max(max_depth, impact["depth"])
-        file_name = impact["file"]
-        if file_name in reverse_graph:
-            downstream = list(nx.descendants(reverse_graph, file_name))
-            all_downstream_modules.extend(downstream)
-    avg_score = total_score / len(impacts)
+        root_file = impact["file"]
+        if root_file in reverse_graph:
+            downstream = set(nx.descendants(reverse_graph, root_file))
+            all_impacted_files.update(downstream)
+            # Rank by in-degree (true centrality proxy)
+            for module in downstream:
+                centrality = graph.in_degree(module)
+                high_risk_candidates.append((module, centrality))
+    # Unique impacted files count
+    total_affected = len(all_impacted_files)
+    # Rank high risk modules by dependency centrality
+    high_risk_candidates = sorted(
+        high_risk_candidates,
+        key=lambda x: x[1],
+        reverse=True
+    )
+    high_risk_modules = [m[0] for m in high_risk_candidates[:3]]
+    # Average structural score
+    avg_structural = total_structural_score / len(impacts)
+    # Normalize structural score relative to repo size
+    repo_size = len(graph.nodes)
+    structural_norm = min((total_affected / max(repo_size, 1)), 1.0)
     semantic_results = contextual_risk_score(repo_path, changed_files)
-    structural_norm = min(avg_score / 30, 1.0)
     semantic_norm = min(semantic_results["semantic_score"] / 30, 1.0)
     final_risk_score = (
         structural_norm * STRUCTURAL_WEIGHT +
         semantic_norm * SEMANTIC_WEIGHT
     ) * 100
     classification = classify_final_score(final_risk_score)
-    unique_downstream = list(set(all_downstream_modules))
-    high_risk_modules = unique_downstream[:3]
     return {
         "pr_risk_score": round(final_risk_score, 2),
         "classification": classification,
         "fusion_details": {
-            "structural_score_raw": round(avg_score, 2),
+            "structural_score_raw": round(avg_structural, 2),
             "structural_normalized": round(structural_norm, 3),
             "semantic_score_raw": semantic_results["semantic_score"],
             "semantic_normalized": round(semantic_norm, 3),

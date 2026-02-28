@@ -73,7 +73,7 @@ def analyze_graph(G):
         }
     def entry_score(node_tuple):
         node, degree = node_tuple
-        hint_bonus = any(h in node.lower() for h in ENTRY_HINTS)
+        hint_bonus = 0
         depth_penalty = node.count(os.sep)
         root_bonus = 3 if os.sep not in node else 0
         return (degree * 2) + hint_bonus - depth_penalty + root_bonus
