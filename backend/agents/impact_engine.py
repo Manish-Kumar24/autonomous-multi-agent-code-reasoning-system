@@ -44,13 +44,9 @@ def extract_imports(file_path):
 
 def build_dependency_graph(repo_path):
     repo_path = os.path.abspath(repo_path)
-    print("SCANNING PATH:", repo_path)
-    for root, dirs, files in os.walk(repo_path):
-        print("ROOT:", root)
-        print("FILES FOUND:", files[:5])
-        break
     if repo_path in GRAPH_CACHE:
         return GRAPH_CACHE[repo_path]
+    print("SCANNING PATH:", repo_path)
     G = nx.DiGraph()
     repo_files = set()
     for root, dirs, files in os.walk(repo_path):
@@ -67,14 +63,11 @@ def build_dependency_graph(repo_path):
         imports = extract_imports(full_path)
         for imp in imports:
             module_path = imp.replace(".", "/")
-
-            candidates = [
-                module_path + ".py",
-                os.path.join(module_path, "__init__.py"),
-            ]
-            for candidate in candidates:
-                if candidate in repo_files:
-                    G.add_edge(file, candidate)
+            # try matching anywhere inside repo (more robust)
+            for repo_file in repo_files:
+                if repo_file.endswith(module_path + ".py") or \
+                repo_file.endswith(module_path + "/__init__.py"):
+                    G.add_edge(file, repo_file)
     print("TOTAL EDGES:", len(G.edges))
     print("GRAPH SAMPLE EDGES:", list(G.edges())[:20])
     GRAPH_CACHE[repo_path] = G
@@ -196,7 +189,7 @@ def analyze_impact(repo_path: str, changed_files: List[str]):
     graph_nodes = {node.replace("\\", "/").lstrip("./") for node in G.nodes}
     for changed in normalized_changed_files:
         for node in graph_nodes:
-            if node == changed:
+            if node.endswith(changed):
                 valid_files.append(node)
     print("VALID FILES:", valid_files)
     print("TOTAL GRAPH NODES:", len(G.nodes))
