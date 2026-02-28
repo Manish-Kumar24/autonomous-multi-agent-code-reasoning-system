@@ -108,6 +108,9 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
         "confidence_score": semantic_results["confidence"]
     }
 def generate_pr_ai_summary(pr_data):
+    formatted_modules = ", ".join(
+        [f"`{m}`" for m in pr_data["high_risk_modules"]]
+    )
     prompt = f"""
 You are a senior engineering reviewer.
 Given:
@@ -115,7 +118,7 @@ Given:
 - Classification: {pr_data["classification"]}
 - Total affected files: {pr_data["total_files_affected"]}
 - Max dependency depth: {pr_data["max_impact_depth"]}
-- High risk modules: {pr_data["high_risk_modules"]}
+- High risk modules: {pr_data["formatted_modules"]}
 Return STRICTLY valid JSON only:
 {{
   "review_focus": "...",
