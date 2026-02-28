@@ -34,6 +34,9 @@ def process_pr_event(payload: dict):
             pr_data["ai_analysis"] = generate_pr_ai_summary(pr_data)
             pr_data.update(build_enterprise_decision(pr_data))
             pr_data.update(compute_hybrid_merge_decision(pr_data))
+            high_risk_modules = "\n".join(
+                [f"- `{m}`" for m in pr_data["high_risk_modules"]]
+            )
             comment_body = f"""
 ## 🚨 PR Governance Report
 
@@ -47,7 +50,7 @@ def process_pr_event(payload: dict):
 ### 📊 Impact Summary
 - Total Files Affected: {pr_data['total_files_affected']}
 - Max Dependency Depth: {pr_data['max_impact_depth']}
-- High Risk Modules: {pr_data['high_risk_modules']}
+- High Risk Modules: {high_risk_modules}
 
 ---
 
