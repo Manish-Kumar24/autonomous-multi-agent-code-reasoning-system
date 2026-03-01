@@ -20,8 +20,6 @@ def process_pr_event(payload: dict):
         repo_full_name = payload["repository"]["full_name"]
         repo_clone_url = payload["repository"]["clone_url"]
         pr_number = payload["pull_request"]["number"]
-        additions = payload["pull_request"].get("additions", 0)
-        deletions = payload["pull_request"].get("deletions", 0)
         changed_files_count = payload["pull_request"].get("changed_files", 0)
         logger.info(f"Processing PR #{pr_number} for {repo_full_name}")
 
@@ -79,8 +77,6 @@ def process_pr_event(payload: dict):
 ### 📊 Impact Summary
 - **Total Files Affected:** {pr_data['total_files_affected']}
 - **Max Dependency Depth:** {pr_data['max_impact_depth']}
-- **Lines Added:** {pr_data['additions']}
-- **Lines Deleted:** {pr_data['deletions']}
 - **Change Volume Multiplier:** {pr_data['volume_multiplier']}
 - **Security Flags Detected:** {"YES" if pr_data.get("security_flag") else "NO"}
 
