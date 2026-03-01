@@ -41,19 +41,16 @@ def get_pr_files(repo_full_name: str, pr_number: int, access_token: str):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     files = response.json()
-    changed_files = []
-    full_diff_text = ""
-    for file in files:
-        filename = file.get("filename")
-        patch = file.get("patch", "")  # patch contains unified diff
-        if filename:
-            changed_files.append(filename)
-        if patch:
-            full_diff_text += f"\n\n# FILE: {filename}\n"
-            full_diff_text += patch
+    changed_files = [file["filename"] for file in files]
+    # Fetch diff
+    diff_response = requests.get(
+        f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}",
+        headers=headers,
+        params={"media_type": "diff"}
+    )
     return {
         "changed_files": changed_files,
-        "diff_text": full_diff_text
+        "diff_text": diff_response.text
     }
 
 def post_pr_comment(repo_full_name: str, pr_number: int, access_token: str, body: str):

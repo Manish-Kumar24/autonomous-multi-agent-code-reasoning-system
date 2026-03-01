@@ -101,11 +101,11 @@ def process_pr_event(payload: dict):
 """.strip()
             post_pr_comment(repo_full_name, pr_number, access_token, comment_body)
             logger.info(f"PR #{pr_number} processed successfully.")
+            print("COMMENT LENGTH:", len(comment_body))
         finally:
             shutil.rmtree(temp_dir)
     except Exception as e:
         logger.error(f"Error processing PR: {str(e)}")
-    print("COMMENT LENGTH:", len(comment_body))
 
 @router.post("/github-webhook")
 async def github_webhook(
