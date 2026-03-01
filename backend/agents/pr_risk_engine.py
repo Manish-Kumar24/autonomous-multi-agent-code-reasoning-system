@@ -71,6 +71,65 @@ def classify_final_score(score):
         return "MODERATE"
     else:
         return "LOW"
+
+def analyze_structural_delta(diff_text: str) -> Dict[str, float]:
+    if not diff_text:
+        return {
+            "api_surface_change": 0.0,
+            "signature_change": 0.0,
+            "import_change": 0.0,
+            "cosmetic_ratio": 1.0
+        }
+    added_lines = []
+    removed_lines = []
+    for line in diff_text.splitlines():
+        if line.startswith("+") and not line.startswith("+++"):
+            added_lines.append(line[1:])
+        elif line.startswith("-") and not line.startswith("---"):
+            removed_lines.append(line[1:])
+    total_changes = len(added_lines) + len(removed_lines)
+    if total_changes == 0:
+        return {
+            "api_surface_change": 0.0,
+            "signature_change": 0.0,
+            "import_change": 0.0,
+            "cosmetic_ratio": 1.0
+        }
+    # ---- API surface detection ----
+    api_patterns = [
+        r"^def\s+\w+\(",
+        r"^class\s+\w+",
+    ]
+    api_changes = sum(
+        any(re.match(p, l.strip()) for p in api_patterns)
+        for l in added_lines + removed_lines
+    )
+    api_surface_score = min(api_changes / 5, 1.0)
+    # ---- Signature modification ----
+    signature_changes = sum(
+        "def " in l and "(" in l and ")" in l
+        for l in added_lines + removed_lines
+    )
+    signature_score = min(signature_changes / 3, 1.0)
+    # ---- Import change detection ----
+    import_changes = sum(
+        l.strip().startswith(("import ", "from "))
+        for l in added_lines + removed_lines
+    )
+    import_score = min(import_changes / 5, 1.0)
+    # ---- Cosmetic change detection ----
+    meaningful_changes = sum(
+        l.strip() and not l.strip().startswith("#")
+        for l in added_lines + removed_lines
+    )
+    cosmetic_ratio = meaningful_changes / max(total_changes, 1)
+    return {
+        "api_surface_change": api_surface_score,
+        "signature_change": signature_score,
+        "import_change": import_score,
+        "cosmetic_ratio": cosmetic_ratio
+    }
+
 def calculate_pr_risk(repo_path: str, changed_files: List[str], diff_text: str = "") -> Dict[str, Any]:
     impacts = analyze_impact(repo_path, changed_files)
     # ---- Diff Aware Risk Layer ----
@@ -78,6 +137,7 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str], diff_text: str =
         "change_intensity": 0,
         "critical_modification_score": 0
     }
+    structural_delta = analyze_structural_delta(diff_text)
     if impacts and impacts[0].get("file") == "INVALID_INPUT":
         return {
             "pr_risk_score": 0,
@@ -126,7 +186,18 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str], diff_text: str =
     avg_structural = total_structural_score / len(impacts)
     # Normalize structural score relative to repo size
     repo_size = len(graph.nodes)
-    structural_norm = min((total_affected / max(10, repo_size * 0.05)), 1.0)
+    base_structural = min((total_affected / max(10, repo_size * 0.05)), 1.0)
+    # Amplify only if real structural changes detected
+    structural_amplifier = (
+        structural_delta["api_surface_change"] * 0.4 +
+        structural_delta["signature_change"] * 0.4 +
+        structural_delta["import_change"] * 0.2
+    )
+    # Cosmetic dampening
+    cosmetic_dampener = structural_delta["cosmetic_ratio"]
+    print("STRUCTURAL DELTA:", structural_delta)
+    structural_norm = base_structural * (0.5 + structural_amplifier) * cosmetic_dampener
+    structural_norm = min(structural_norm, 1.0)
     semantic_results = contextual_risk_score(repo_path, changed_files)
     semantic_norm = min(semantic_results["semantic_score"] / 30, 1.0)
     # Diff amplification factor

@@ -79,6 +79,7 @@ def build_dependency_graph(repo_path):
     print("GRAPH SAMPLE EDGES:", list(G.edges())[:20])
     GRAPH_CACHE[repo_path] = G
     return G
+    
 def analyze_graph(G):
     if len(G.nodes) == 0:
         return {
