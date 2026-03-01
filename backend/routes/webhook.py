@@ -68,8 +68,8 @@ def process_pr_event(payload: dict):
 ---
 
 ### 📊 Impact Summary
-- Total Files Affected: {pr_data['total_files_affected']}
-- Max Dependency Depth: {pr_data['max_impact_depth']}
+- **Total Files Affected:** {pr_data['total_files_affected']}
+- **Max Dependency Depth:** {pr_data['max_impact_depth']}
 
 **High Risk Modules:**
 
@@ -97,6 +97,10 @@ def process_pr_event(payload: dict):
             shutil.rmtree(temp_dir)
     except Exception as e:
         logger.error(f"Error processing PR: {str(e)}")
+    
+    print("DEBUG COMMENT BODY:")
+    print(comment_body)
+    print(repr(comment_body))
 
 @router.post("/github-webhook")
 async def github_webhook(
