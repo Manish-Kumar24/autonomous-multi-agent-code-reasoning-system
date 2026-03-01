@@ -21,25 +21,27 @@ def extract_files_from_diff(diff_text: str):
     return list(set(files))
 
 def analyze_diff_metrics(diff_text: str) -> Dict[str, Any]:
+    import re
     lines_added = 0
     lines_deleted = 0
     import_changes = 0
     function_signature_changes = 0
     class_changes = 0
     for line in diff_text.split("\n"):
-        if line.startswith("+") and not line.startswith("+++"):
+        stripped = line.lstrip()
+        if stripped.startswith("+") and not stripped.startswith("+++"):
             lines_added += 1
-            if re.search(r"\b(import|from)\b", line):
+            if re.search(r"\b(import|from)\b", stripped):
                 import_changes += 1
-            if re.search(r"\b(async\s+def|def)\s+\w+\(.*\):", line):
+            if re.search(r"\b(async\s+def|def)\s+\w+\(.*\):", stripped):
                 function_signature_changes += 1
-            if re.search(r"\bclass\s+\w+", line):
+            if re.search(r"\bclass\s+\w+", stripped):
                 class_changes += 1
-        elif line.startswith("-") and not line.startswith("---"):
+        elif stripped.startswith("-") and not stripped.startswith("---"):
             lines_deleted += 1
-            if re.search(r"\b(async\s+def|def)\s+\w+\(.*\):", line):
+            if re.search(r"\b(async\s+def|def)\s+\w+\(.*\):", stripped):
                 function_signature_changes += 1
-            if re.search(r"\bclass\s+\w+", line):
+            if re.search(r"\bclass\s+\w+", stripped):
                 class_changes += 1
     total_changes = lines_added + lines_deleted
     change_intensity = min(total_changes / 500, 1.0)
