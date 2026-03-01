@@ -21,33 +21,32 @@ def extract_files_from_diff(diff_text: str):
     return list(set(files))
 
 def analyze_diff_metrics(diff_text: str) -> Dict[str, Any]:
-    """
-    Extract meaningful risk signals from raw git diff.
-    """
     lines_added = 0
     lines_deleted = 0
     import_changes = 0
     function_signature_changes = 0
+    class_changes = 0
     for line in diff_text.split("\n"):
-        # Count additions / deletions
         if line.startswith("+") and not line.startswith("+++"):
             lines_added += 1
-            # Detect import changes
-            if re.search(r"\bimport\b|\bfrom\b", line):
+            if re.search(r"\b(import|from)\b", line):
                 import_changes += 1
-            # Detect function signature change
-            if re.search(r"\bdef\s+\w+\(.*\):", line):
+            if re.search(r"\b(async\s+def|def)\s+\w+\(.*\):", line):
                 function_signature_changes += 1
+            if re.search(r"\bclass\s+\w+", line):
+                class_changes += 1
         elif line.startswith("-") and not line.startswith("---"):
             lines_deleted += 1
-            if re.search(r"\bdef\s+\w+\(.*\):", line):
+            if re.search(r"\b(async\s+def|def)\s+\w+\(.*\):", line):
                 function_signature_changes += 1
+            if re.search(r"\bclass\s+\w+", line):
+                class_changes += 1
     total_changes = lines_added + lines_deleted
-    # Change intensity score (normalized)
     change_intensity = min(total_changes / 500, 1.0)
-    # Critical modification boost
     critical_modification = min(
-        (import_changes * 0.1) + (function_signature_changes * 0.2),
+        (import_changes * 0.1)
+        + (function_signature_changes * 0.25)
+        + (class_changes * 0.2),
         1.0
     )
     return {
@@ -56,6 +55,7 @@ def analyze_diff_metrics(diff_text: str) -> Dict[str, Any]:
         "total_changes": total_changes,
         "import_changes": import_changes,
         "function_signature_changes": function_signature_changes,
+        "class_changes": class_changes,
         "change_intensity": change_intensity,
         "critical_modification_score": critical_modification
     }
