@@ -77,7 +77,6 @@ def process_pr_event(payload: dict):
 ### 📊 Impact Summary
 - **Total Files Affected:** {pr_data['total_files_affected']}
 - **Max Dependency Depth:** {pr_data['max_impact_depth']}
-- **Change Volume Multiplier:** {pr_data['volume_multiplier']}
 - **Security Flags Detected:** {"YES" if pr_data.get("security_flag") else "NO"}
 
 **High Risk Modules:**
