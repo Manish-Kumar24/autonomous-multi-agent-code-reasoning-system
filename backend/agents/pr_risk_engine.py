@@ -201,7 +201,14 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str], diff_text: str =
     structural_norm = base_structural * (0.5 + structural_amplifier) * cosmetic_dampener
     structural_norm = min(structural_norm, 1.0)
     semantic_results = contextual_risk_score(repo_path, changed_files)
-    semantic_norm = min(semantic_results["semantic_score"] / 30, 1.0)
+
+    try:
+        semantic_score_raw = float(semantic_results.get("semantic_score", 0))
+    except (ValueError, TypeError):
+        semantic_score_raw = 0.0
+
+    semantic_norm = min(semantic_score_raw / 30, 1.0)
+
     # Diff amplification factor
     diff_amplifier = (
         diff_metrics["change_intensity"] * 0.5 +
@@ -221,13 +228,18 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str], diff_text: str =
         diff_amplifier * diff_weight
     ) * 100
     classification = classify_final_score(final_risk_score)
+    confidence_raw = semantic_results.get("confidence", 0.5)
+    try:
+        confidence_score = float(confidence_raw)
+    except (ValueError, TypeError):
+        confidence_score = 0.5
     return {
         "pr_risk_score": round(final_risk_score, 2),
         "classification": classification,
         "fusion_details": {
             "structural_score_raw": round(avg_structural, 2),
             "structural_normalized": round(structural_norm, 3),
-            "semantic_score_raw": semantic_results["semantic_score"],
+            "semantic_score_raw": semantic_score_raw,
             "semantic_normalized": round(semantic_norm, 3),
             "weights": {
                 "structural": STRUCTURAL_WEIGHT,
@@ -240,7 +252,7 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str], diff_text: str =
         "file_breakdown": impacts,
         "semantic_risk": semantic_results,
         "diff_risk": diff_metrics,
-        "confidence_score": semantic_results["confidence"]
+        "confidence_score": confidence_score
     }
     
 def generate_pr_ai_summary(pr_data):
