@@ -72,9 +72,9 @@ def build_dependency_graph(repo_path):
             # try matching anywhere inside repo (more robust)
             for repo_file in repo_files:
                 if repo_file.endswith(module_path + ".py") or \
-                repo_file.endswith(module_path + "/__init__.py")
-                if repo_file != file:
-                    G.add_edge(file, repo_file)
+                repo_file.endswith(module_path + "/__init__.py"):
+                    if repo_file != file:
+                        G.add_edge(file, repo_file)
     print("TOTAL EDGES:", len(G.edges))
     print("GRAPH SAMPLE EDGES:", list(G.edges())[:20])
     GRAPH_CACHE[repo_path] = G
