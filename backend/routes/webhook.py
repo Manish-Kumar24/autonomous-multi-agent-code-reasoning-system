@@ -39,9 +39,15 @@ def process_pr_event(payload: dict):
             pr_data.update(build_enterprise_decision(pr_data))
             pr_data.update(compute_hybrid_merge_decision(pr_data))
             # Format high risk modules as bullet list
-            high_risk_modules_list = [
-                f"- `{m}`" for m in pr_data["high_risk_modules"]
-            ]
+            clean_modules = []
+            for module in pr_data["high_risk_modules"]:
+                # Split in case newline slipped inside
+                parts = module.splitlines()
+                for p in parts:
+                    p = p.strip()
+                    if p:
+                        clean_modules.append(p)
+            high_risk_modules_list = [f"- `{m}`" for m in clean_modules]
             high_risk_modules = "\n".join(high_risk_modules_list)
             # Sanitize AI output to preserve __init__.py formatting
             review_focus = pr_data["ai_analysis"]["review_focus"]
@@ -52,37 +58,38 @@ def process_pr_event(payload: dict):
                 testing_strategy = testing_strategy.replace(module, f"`{module}`")
                 risk_explanation = risk_explanation.replace(module, f"`{module}`")
             # 🔥 THIS IS THE ONLY REAL FIX
-            comment_body = textwrap.dedent(f"""
-                ## 🚨 PR Governance Report
-                **Risk Score:** {pr_data['pr_risk_score']}  
-                **Classification:** {pr_data['classification']}  
-                **Final Decision:** {pr_data['hybrid_governance']['final_merge_decision']}  
-                **Governance Level:** {pr_data['hybrid_governance']['governance_level']}  
+            comment_body = textwrap.dedent(f"""\
+            ## 🚨 PR Governance Report
 
-                ---
+            **Risk Score:** {pr_data['pr_risk_score']}  
+            **Classification:** {pr_data['classification']}  
+            **Final Decision:** {pr_data['hybrid_governance']['final_merge_decision']}  
+            **Governance Level:** {pr_data['hybrid_governance']['governance_level']}  
 
-                ### 📊 Impact Summary
-                - Total Files Affected: {pr_data['total_files_affected']}
-                - Max Dependency Depth: {pr_data['max_impact_depth']}
+            ---
 
-                **High Risk Modules:**
-                {high_risk_modules}
+            ### 📊 Impact Summary
+            - Total Files Affected: {pr_data['total_files_affected']}
+            - Max Dependency Depth: {pr_data['max_impact_depth']}
 
-                ---
+            **High Risk Modules:**
+            {high_risk_modules}
 
-                ### 🧠 AI Analysis
+            ---
 
-                **Review Focus:**  
-                {review_focus}
+            ### 🧠 AI Analysis
 
-                **Testing Strategy:**  
-                {testing_strategy}
+            **Review Focus:**  
+            {review_focus}
 
-                **Merge Readiness:**  
-                {pr_data['ai_analysis']['merge_readiness']}
+            **Testing Strategy:**  
+            {testing_strategy}
 
-                **Risk Explanation:**  
-                {risk_explanation}
+            **Merge Readiness:**  
+            {pr_data['ai_analysis']['merge_readiness']}
+
+            **Risk Explanation:**  
+            {risk_explanation}
             """).strip()
             post_pr_comment(repo_full_name, pr_number, access_token, comment_body)
             logger.info(f"PR #{pr_number} processed successfully.")
