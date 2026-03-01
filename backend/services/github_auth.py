@@ -30,27 +30,28 @@ def generate_installation_token(installation_id: int):
     return response.json()["token"]
 
 def get_pr_files(repo_full_name: str, pr_number: int, access_token: str):
-    """
-    Fetch changed files and full unified diff from PR.
-    """
-    url = f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}/files"
-    headers = {
+    # 1️⃣ Get changed file names
+    files_url = f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}/files"
+    headers_json = {
         "Authorization": f"token {access_token}",
         "Accept": "application/vnd.github+json"
     }
-    response = requests.get(url, headers=headers)
+    response = requests.get(files_url, headers=headers_json)
     response.raise_for_status()
     files = response.json()
     changed_files = [file["filename"] for file in files]
-    # Fetch diff
-    diff_response = requests.get(
-        f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}",
-        headers=headers,
-        params={"media_type": "diff"}
-    )
+    # 2️⃣ Get FULL unified diff (CRITICAL FIX)
+    diff_url = f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}"
+    headers_diff = {
+        "Authorization": f"token {access_token}",
+        "Accept": "application/vnd.github.v3.diff"
+    }
+    diff_response = requests.get(diff_url, headers=headers_diff)
+    diff_response.raise_for_status()
+    diff_text = diff_response.text
     return {
         "changed_files": changed_files,
-        "diff_text": diff_response.text
+        "diff_text": diff_text
     }
 
 def post_pr_comment(repo_full_name: str, pr_number: int, access_token: str, body: str):

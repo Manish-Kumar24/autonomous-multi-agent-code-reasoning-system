@@ -62,8 +62,7 @@ def process_pr_event(payload: dict):
                 review_focus = review_focus.replace(module, f"`{module}`")
                 testing_strategy = testing_strategy.replace(module, f"`{module}`")
                 risk_explanation = risk_explanation.replace(module, f"`{module}`")
-            print("DIFF LENGTH:", len(diff_text))
-            print("FILES:", changed_files)
+            print(diff_text[:300])
             # 🔥 THIS IS THE ONLY REAL FIX
             comment_body = f"""## 🚨 PR Governance Report
 
