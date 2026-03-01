@@ -60,37 +60,37 @@ def process_pr_event(payload: dict):
             # 🔥 THIS IS THE ONLY REAL FIX
             comment_body = f"""## 🚨 PR Governance Report
 
-            **Risk Score:** {pr_data['pr_risk_score']}  
-            **Classification:** {pr_data['classification']}  
-            **Final Decision:** {pr_data['hybrid_governance']['final_merge_decision']}  
-            **Governance Level:** {pr_data['hybrid_governance']['governance_level']}  
+**Risk Score:** {pr_data['pr_risk_score']}  
+**Classification:** {pr_data['classification']}  
+**Final Decision:** {pr_data['hybrid_governance']['final_merge_decision']}  
+**Governance Level:** {pr_data['hybrid_governance']['governance_level']}  
 
-            ---
+---
 
-            ### 📊 Impact Summary
-            - Total Files Affected: {pr_data['total_files_affected']}
-            - Max Dependency Depth: {pr_data['max_impact_depth']}
+### 📊 Impact Summary
+- Total Files Affected: {pr_data['total_files_affected']}
+- Max Dependency Depth: {pr_data['max_impact_depth']}
 
-            **High Risk Modules:**
+**High Risk Modules:**
 
-            {high_risk_modules}
+{high_risk_modules}
 
-            ---
+---
 
-            ### 🧠 AI Analysis
+### 🧠 AI Analysis
 
-            **Review Focus:**  
-            {review_focus}
+**Review Focus:**  
+{review_focus}
 
-            **Testing Strategy:**  
-            {testing_strategy}
+**Testing Strategy:**  
+{testing_strategy}
 
-            **Merge Readiness:**  
-            {pr_data['ai_analysis']['merge_readiness']}
+**Merge Readiness:**  
+{pr_data['ai_analysis']['merge_readiness']}
 
-            **Risk Explanation:**  
-            {risk_explanation}
-            """.strip()
+**Risk Explanation:**  
+{risk_explanation}
+""".strip()
             post_pr_comment(repo_full_name, pr_number, access_token, comment_body)
             logger.info(f"PR #{pr_number} processed successfully.")
         finally:
