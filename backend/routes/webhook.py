@@ -58,8 +58,7 @@ def process_pr_event(payload: dict):
                 testing_strategy = testing_strategy.replace(module, f"`{module}`")
                 risk_explanation = risk_explanation.replace(module, f"`{module}`")
             # 🔥 THIS IS THE ONLY REAL FIX
-            comment_body = textwrap.dedent(f"""\
-            ## 🚨 PR Governance Report
+            comment_body = f"""## 🚨 PR Governance Report
 
             **Risk Score:** {pr_data['pr_risk_score']}  
             **Classification:** {pr_data['classification']}  
@@ -73,6 +72,7 @@ def process_pr_event(payload: dict):
             - Max Dependency Depth: {pr_data['max_impact_depth']}
 
             **High Risk Modules:**
+
             {high_risk_modules}
 
             ---
@@ -90,7 +90,7 @@ def process_pr_event(payload: dict):
 
             **Risk Explanation:**  
             {risk_explanation}
-            """).strip()
+            """.strip()
             post_pr_comment(repo_full_name, pr_number, access_token, comment_body)
             logger.info(f"PR #{pr_number} processed successfully.")
         finally:
