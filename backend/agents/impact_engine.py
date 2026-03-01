@@ -71,8 +71,8 @@ def build_dependency_graph(repo_path):
             module_path = imp.replace(".", "/")
             # try matching anywhere inside repo (more robust)
             for repo_file in repo_files:
-                if repo_file.endswith(module_path + ".py") or \
-                repo_file.endswith(module_path + "/__init__.py"):
+                if (repo_file.endswith(module_path + ".py") or \
+                repo_file.endswith(module_path + "/__init__.py")):
                     if repo_file != file:
                         G.add_edge(file, repo_file)
     print("TOTAL EDGES:", len(G.edges))
