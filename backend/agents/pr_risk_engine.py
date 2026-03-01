@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 def extract_files_from_diff(diff_text: str):
     files = []
     for line in diff_text.split("\n"):
@@ -18,6 +19,47 @@ def extract_files_from_diff(diff_text: str):
                 file_path = file_path.lstrip("./")
                 files.append(file_path)
     return list(set(files))
+
+def analyze_diff_metrics(diff_text: str) -> Dict[str, Any]:
+    """
+    Extract meaningful risk signals from raw git diff.
+    """
+    lines_added = 0
+    lines_deleted = 0
+    import_changes = 0
+    function_signature_changes = 0
+    for line in diff_text.split("\n"):
+        # Count additions / deletions
+        if line.startswith("+") and not line.startswith("+++"):
+            lines_added += 1
+            # Detect import changes
+            if re.search(r"\bimport\b|\bfrom\b", line):
+                import_changes += 1
+            # Detect function signature change
+            if re.search(r"\bdef\s+\w+\(.*\):", line):
+                function_signature_changes += 1
+        elif line.startswith("-") and not line.startswith("---"):
+            lines_deleted += 1
+            if re.search(r"\bdef\s+\w+\(.*\):", line):
+                function_signature_changes += 1
+    total_changes = lines_added + lines_deleted
+    # Change intensity score (normalized)
+    change_intensity = min(total_changes / 500, 1.0)
+    # Critical modification boost
+    critical_modification = min(
+        (import_changes * 0.1) + (function_signature_changes * 0.2),
+        1.0
+    )
+    return {
+        "lines_added": lines_added,
+        "lines_deleted": lines_deleted,
+        "total_changes": total_changes,
+        "import_changes": import_changes,
+        "function_signature_changes": function_signature_changes,
+        "change_intensity": change_intensity,
+        "critical_modification_score": critical_modification
+    }
+
 STRUCTURAL_WEIGHT = 0.6
 SEMANTIC_WEIGHT = 0.4
 def classify_final_score(score):
@@ -29,8 +71,13 @@ def classify_final_score(score):
         return "MODERATE"
     else:
         return "LOW"
-def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any]:
+def calculate_pr_risk(repo_path: str, changed_files: List[str], diff_text: str = "") -> Dict[str, Any]:
     impacts = analyze_impact(repo_path, changed_files)
+    # ---- Diff Aware Risk Layer ----
+    diff_metrics = analyze_diff_metrics(diff_text) if diff_text else {
+        "change_intensity": 0,
+        "critical_modification_score": 0
+    }
     if impacts and impacts[0].get("file") == "INVALID_INPUT":
         return {
             "pr_risk_score": 0,
@@ -82,9 +129,20 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
     structural_norm = min((total_affected / max(10, repo_size * 0.05)), 1.0)
     semantic_results = contextual_risk_score(repo_path, changed_files)
     semantic_norm = min(semantic_results["semantic_score"] / 30, 1.0)
-    final_risk_score = (
+    # Diff amplification factor
+    diff_amplifier = (
+        diff_metrics["change_intensity"] * 0.5 +
+        diff_metrics["critical_modification_score"] * 0.5
+    )
+    # Blend diff awareness
+    diff_weight = 0.25  # new dimension weight
+    base_score = (
         structural_norm * STRUCTURAL_WEIGHT +
         semantic_norm * SEMANTIC_WEIGHT
+    )
+    final_risk_score = (
+        base_score * (1 - diff_weight) +
+        diff_amplifier * diff_weight
     ) * 100
     classification = classify_final_score(final_risk_score)
     return {
@@ -105,8 +163,10 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str]) -> Dict[str, Any
         "high_risk_modules": high_risk_modules,
         "file_breakdown": impacts,
         "semantic_risk": semantic_results,
+        "diff_risk": diff_metrics,
         "confidence_score": semantic_results["confidence"]
     }
+    
 def generate_pr_ai_summary(pr_data):
     formatted_modules = ", ".join(
         [f"`{m}`" for m in pr_data["high_risk_modules"]]

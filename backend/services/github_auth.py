@@ -28,7 +28,11 @@ def generate_installation_token(installation_id: int):
     )
     response.raise_for_status()
     return response.json()["token"]
+
 def get_pr_files(repo_full_name: str, pr_number: int, access_token: str):
+    """
+    Fetch changed files and full unified diff from PR.
+    """
     url = f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}/files"
     headers = {
         "Authorization": f"token {access_token}",
@@ -37,7 +41,21 @@ def get_pr_files(repo_full_name: str, pr_number: int, access_token: str):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     files = response.json()
-    return [file["filename"] for file in files]
+    changed_files = []
+    full_diff_text = ""
+    for file in files:
+        filename = file.get("filename")
+        patch = file.get("patch", "")  # patch contains unified diff
+        if filename:
+            changed_files.append(filename)
+        if patch:
+            full_diff_text += f"\n\n# FILE: {filename}\n"
+            full_diff_text += patch
+    return {
+        "changed_files": changed_files,
+        "diff_text": full_diff_text
+    }
+
 def post_pr_comment(repo_full_name: str, pr_number: int, access_token: str, body: str):
     url = f"https://api.github.com/repos/{repo_full_name}/issues/{pr_number}/comments"
     headers = {

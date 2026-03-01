@@ -20,9 +20,15 @@ def process_pr_event(payload: dict):
         repo_full_name = payload["repository"]["full_name"]
         repo_clone_url = payload["repository"]["clone_url"]
         pr_number = payload["pull_request"]["number"]
+        additions = payload["pull_request"].get("additions", 0)
+        deletions = payload["pull_request"].get("deletions", 0)
+        changed_files_count = payload["pull_request"].get("changed_files", 0)
         logger.info(f"Processing PR #{pr_number} for {repo_full_name}")
+
         access_token = generate_installation_token(installation_id)
-        changed_files = get_pr_files(repo_full_name, pr_number, access_token)
+        pr_files_data = get_pr_files(repo_full_name, pr_number, access_token)
+        changed_files = pr_files_data["changed_files"]
+        diff_text = pr_files_data["diff_text"]
         temp_dir = tempfile.mkdtemp()
         subprocess.run(
             ["git", "clone", "--depth", "1", "--branch",
@@ -33,7 +39,8 @@ def process_pr_event(payload: dict):
         try:
             pr_data = calculate_pr_risk(
                 repo_path=temp_dir,
-                changed_files=changed_files
+                changed_files=changed_files, 
+                diff_text=diff_text
             )
             pr_data["ai_analysis"] = generate_pr_ai_summary(pr_data)
             pr_data.update(build_enterprise_decision(pr_data))
@@ -57,6 +64,8 @@ def process_pr_event(payload: dict):
                 review_focus = review_focus.replace(module, f"`{module}`")
                 testing_strategy = testing_strategy.replace(module, f"`{module}`")
                 risk_explanation = risk_explanation.replace(module, f"`{module}`")
+            print("DIFF LENGTH:", len(diff_text))
+            print("FILES:", changed_files)
             # 🔥 THIS IS THE ONLY REAL FIX
             comment_body = f"""## 🚨 PR Governance Report
 
@@ -70,6 +79,10 @@ def process_pr_event(payload: dict):
 ### 📊 Impact Summary
 - **Total Files Affected:** {pr_data['total_files_affected']}
 - **Max Dependency Depth:** {pr_data['max_impact_depth']}
+- **Lines Added:** {pr_data['additions']}
+- **Lines Deleted:** {pr_data['deletions']}
+- **Change Volume Multiplier:** {pr_data['volume_multiplier']}
+- **Security Flags Detected:** {"YES" if pr_data.get("security_flag") else "NO"}
 
 **High Risk Modules:**
 
