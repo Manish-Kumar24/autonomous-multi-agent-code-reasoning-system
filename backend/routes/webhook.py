@@ -10,8 +10,10 @@ from utils.logger import get_logger
 from agents.pr_risk_engine import calculate_pr_risk, generate_pr_ai_summary
 from agents.enterprise_decision_engine import build_enterprise_decision
 from agents.hybrid_governance_engine import compute_hybrid_merge_decision
+import textwrap
 logger = get_logger("github-webhook")
 router = APIRouter()
+
 def process_pr_event(payload: dict):
     try:
         installation_id = payload["installation"]["id"]
@@ -23,7 +25,9 @@ def process_pr_event(payload: dict):
         changed_files = get_pr_files(repo_full_name, pr_number, access_token)
         temp_dir = tempfile.mkdtemp()
         subprocess.run(
-            ["git", "clone", "--depth", "1", "--branch", payload["pull_request"]["head"]["ref"], repo_clone_url, temp_dir],
+            ["git", "clone", "--depth", "1", "--branch",
+             payload["pull_request"]["head"]["ref"],
+             repo_clone_url, temp_dir],
             check=True
         )
         try:
@@ -34,11 +38,12 @@ def process_pr_event(payload: dict):
             pr_data["ai_analysis"] = generate_pr_ai_summary(pr_data)
             pr_data.update(build_enterprise_decision(pr_data))
             pr_data.update(compute_hybrid_merge_decision(pr_data))
+            # Format high risk modules as bullet list
             high_risk_modules_list = [
                 f"- `{m}`" for m in pr_data["high_risk_modules"]
             ]
             high_risk_modules = "\n".join(high_risk_modules_list)
-            # ✅ Sanitize AI output to preserve __init__.py formatting
+            # Sanitize AI output to preserve __init__.py formatting
             review_focus = pr_data["ai_analysis"]["review_focus"]
             testing_strategy = pr_data["ai_analysis"]["testing_strategy"]
             risk_explanation = pr_data["ai_analysis"]["risk_explanation"]
@@ -46,38 +51,39 @@ def process_pr_event(payload: dict):
                 review_focus = review_focus.replace(module, f"`{module}`")
                 testing_strategy = testing_strategy.replace(module, f"`{module}`")
                 risk_explanation = risk_explanation.replace(module, f"`{module}`")
-            comment_body = f"""
-## 🚨 PR Governance Report
+            # 🔥 THIS IS THE ONLY REAL FIX
+            comment_body = textwrap.dedent(f"""
+                ## 🚨 PR Governance Report
+                **Risk Score:** {pr_data['pr_risk_score']}  
+                **Classification:** {pr_data['classification']}  
+                **Final Decision:** {pr_data['hybrid_governance']['final_merge_decision']}  
+                **Governance Level:** {pr_data['hybrid_governance']['governance_level']}  
 
-**Risk Score:** {pr_data['pr_risk_score']}  
-**Classification:** {pr_data['classification']}  
-**Final Decision:** {pr_data['hybrid_governance']['final_merge_decision']}  
-**Governance Level:** {pr_data['hybrid_governance']['governance_level']}  
+                ---
 
----
+                ### 📊 Impact Summary
+                - Total Files Affected: {pr_data['total_files_affected']}
+                - Max Dependency Depth: {pr_data['max_impact_depth']}
 
-### 📊 Impact Summary
-- Total Files Affected: {pr_data['total_files_affected']}
-- Max Dependency Depth: {pr_data['max_impact_depth']}
+                **High Risk Modules:**
+                {high_risk_modules}
 
-**High Risk Modules:**
-{high_risk_modules}
----
+                ---
 
-### 🧠 AI Analysis
+                ### 🧠 AI Analysis
 
-**Review Focus:**  
-{review_focus}
+                **Review Focus:**  
+                {review_focus}
 
-**Testing Strategy:**  
-{testing_strategy}
+                **Testing Strategy:**  
+                {testing_strategy}
 
-**Merge Readiness:**  
-{pr_data['ai_analysis']['merge_readiness']}
+                **Merge Readiness:**  
+                {pr_data['ai_analysis']['merge_readiness']}
 
-**Risk Explanation:**  
-{risk_explanation}
-"""
+                **Risk Explanation:**  
+                {risk_explanation}
+            """).strip()
             post_pr_comment(repo_full_name, pr_number, access_token, comment_body)
             logger.info(f"PR #{pr_number} processed successfully.")
         finally:
