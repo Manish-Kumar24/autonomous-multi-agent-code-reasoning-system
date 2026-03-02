@@ -217,6 +217,7 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str], diff_text: str =
     print("STRUCTURAL:", structural_norm)
     print("SEMANTIC:", semantic_norm)
     print("DIFF:", diff_amplifier)
+    print("WEIGHTS - STRUCTURAL:", STRUCTURAL_WEIGHT, "SEMANTIC:", SEMANTIC_WEIGHT, "DIFF:", diff_weight)
     # Blend diff awareness
     diff_weight = 0.25  # new dimension weight
     base_score = (
