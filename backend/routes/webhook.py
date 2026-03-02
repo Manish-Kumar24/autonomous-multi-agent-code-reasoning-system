@@ -7,7 +7,8 @@ from services.github_auth import (
 )
 from utils.security import verify_signature
 from utils.logger import get_logger
-from agents.pr_risk_engine import calculate_pr_risk, generate_pr_ai_summary
+from agents.pr_risk_engine import calculate_pr_risk
+from agents.llm_review_engine import generate_llm_review
 from agents.enterprise_decision_engine import build_enterprise_decision
 from agents.hybrid_governance_engine import compute_hybrid_merge_decision
 import textwrap
@@ -40,9 +41,14 @@ def process_pr_event(payload: dict):
                 changed_files=changed_files, 
                 diff_text=diff_text
             )
-            pr_data["ai_analysis"] = generate_pr_ai_summary(pr_data)
+            pr_data["ai_analysis"] = generate_llm_review(pr_data)
             pr_data.update(build_enterprise_decision(pr_data))
             pr_data.update(compute_hybrid_merge_decision(pr_data))
+            # Deterministic override: governance wins over AI
+            governance_level = pr_data["hybrid_governance"]["governance_level"]
+            final_decision = pr_data["hybrid_governance"]["final_merge_decision"]
+            if governance_level == "CRITICAL":
+                pr_data["ai_analysis"]["merge_readiness"] = "LOW"
             # Format high risk modules as bullet list
             clean_modules = []
             for module in pr_data["high_risk_modules"]:
@@ -97,6 +103,9 @@ def process_pr_event(payload: dict):
 
 **Risk Explanation:**  
 {risk_explanation}
+
+**Recommended Actions:**  
+{chr(10).join([f"- {a}" for a in pr_data["ai_analysis"]["recommended_actions"]])}
 """.strip()
             post_pr_comment(repo_full_name, pr_number, access_token, comment_body)
             logger.info(f"PR #{pr_number} processed successfully.")

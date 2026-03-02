@@ -1,46 +1,26 @@
-# ==========================
-# Core Backend Framework
-# ==========================
+annotated-types==0.7.0
+anyio==4.12.1
+certifi==2026.2.25
+charset-normalizer==3.4.4
+click==8.3.1
+distro==1.9.0
 fastapi==0.110.0
-uvicorn[standard]==0.29.0
-
-# ==========================
-# Data Validation
-# ==========================
-pydantic==2.6.4
-
-# ==========================
-# Environment Management
-# ==========================
-python-dotenv==1.0.1
-
-# ==========================
-# HTTP Requests
-# ==========================
-requests==2.31.0
-httpx==0.27.0
-
-# ==========================
-# JWT Authentication
-# ==========================
-PyJWT==2.8.0
-
-# ==========================
-# Graph & Dependency Analysis
-# ==========================
-networkx==3.2.1
-
-# ==========================
-# AI / LLM Integration
-# (Keep only what you actually use)
-# ==========================
-openai==1.12.0
 groq==0.4.2
-
-# ==========================
-# Logging / Utilities
-# ==========================
-python-multipart==0.0.9
-
-PyJWT[crypto]
-cryptography
+h11==0.16.0
+httpcore==1.0.9
+httptools==0.7.1
+httpx==0.28.1
+idna==3.11
+pydantic==2.6.1
+pydantic_core==2.16.2
+python-dotenv==1.0.1
+PyYAML==6.0.3
+requests==2.31.0
+sniffio==1.3.1
+starlette==0.36.3
+typing_extensions==4.10.0
+urllib3==2.6.3
+uvicorn==0.27.1
+uvloop==0.22.1
+watchfiles==1.1.1
+websockets==16.0
