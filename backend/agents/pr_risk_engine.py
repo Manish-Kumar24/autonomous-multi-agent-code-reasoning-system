@@ -120,8 +120,9 @@ def analyze_structural_delta(diff_text: str) -> Dict[str, float]:
     import_score = min(import_changes / 5, 1.0)
     # ---- Cosmetic change detection ----
     meaningful_changes = sum(
-        l.strip() and not l.strip().startswith("#")
+        1
         for l in added_lines + removed_lines
+        if l.strip() and not l.strip().startswith("#")
     )
     cosmetic_ratio = meaningful_changes / max(total_changes, 1)
     return {
