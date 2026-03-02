@@ -15,7 +15,6 @@ def extract_files_from_diff(diff_text: str):
             parts = line.split(" ")
             if len(parts) >= 3:
                 file_path = parts[2].replace("a/", "").strip()
-                # Normalize path
                 file_path = file_path.lstrip("./")
                 files.append(file_path)
     return list(set(files))
@@ -214,12 +213,12 @@ def calculate_pr_risk(repo_path: str, changed_files: List[str], diff_text: str =
         diff_metrics["change_intensity"] * 0.5 +
         diff_metrics["critical_modification_score"] * 0.5
     )
+    diff_weight = 0.25  # new dimension weight
     print("STRUCTURAL:", structural_norm)
     print("SEMANTIC:", semantic_norm)
     print("DIFF:", diff_amplifier)
     print("WEIGHTS - STRUCTURAL:", STRUCTURAL_WEIGHT, "SEMANTIC:", SEMANTIC_WEIGHT, "DIFF:", diff_weight)
     # Blend diff awareness
-    diff_weight = 0.25  # new dimension weight
     base_score = (
         structural_norm * STRUCTURAL_WEIGHT +
         semantic_norm * SEMANTIC_WEIGHT

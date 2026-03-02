@@ -104,7 +104,7 @@ def process_pr_event(payload: dict):
         finally:
             shutil.rmtree(temp_dir)
     except Exception as e:
-        logger.error(f"Error processing PR: {str(e)}")
+        logger.exception("Error processing PR")
 
 @router.post("/github-webhook")
 async def github_webhook(
