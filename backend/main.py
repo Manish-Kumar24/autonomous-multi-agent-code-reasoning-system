@@ -3,14 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from typing import List
 from routes.webhook import router as webhook_router
-import subprocess, os, uuid, shutil
+import subprocess, os, uuid, shutil, hmac, hashlib, json, requests
 from agents.enterprise_decision_engine import build_enterprise_decision
 from agents.hybrid_governance_engine import compute_hybrid_merge_decision
 from agents.pr_risk_engine import (
-    calculate_pr_risk,
-    generate_pr_ai_summary
+    calculate_pr_risk
 )
-import hmac, hashlib, json, requests, os
+from agents.llm_review_engine import generate_llm_review
 app = FastAPI(
     title="Autonomous PR Risk Engine",
     version="1.0.0",
@@ -54,12 +53,18 @@ def pr_risk_analysis(request: PRRiskRequest):
             repo_path=temp_dir,
             changed_files=request.changed_files
         )
-        ai_summary = generate_pr_ai_summary(pr_data)
-        pr_data["ai_analysis"] = ai_summary
+        # Enterprise layer first
         enterprise_layer = build_enterprise_decision(pr_data)
         pr_data.update(enterprise_layer)
+        # Hybrid governance next
         hybrid_layer = compute_hybrid_merge_decision(pr_data)
         pr_data.update(hybrid_layer)
+        # LLM interpretation layer last
+        ai_summary = generate_llm_review(pr_data)
+        pr_data["ai_analysis"] = ai_summary
+        # Deterministic override protection
+        if pr_data["hybrid_governance"]["governance_level"] == "CRITICAL":
+            pr_data["ai_analysis"]["merge_readiness"] = "LOW"
         return pr_data
     except subprocess.TimeoutExpired:
         raise HTTPException(
